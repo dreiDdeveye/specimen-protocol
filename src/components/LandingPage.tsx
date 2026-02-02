@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { SpecimenIcon, EvolutionIcon, TerminalIcon, ChartIcon, UserIcon } from '@/icons';
 
 export default function LandingPage() {
@@ -138,43 +139,44 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right side - Specimen Preview */}
+            {/* Right side - Mascot Image */}
             <div className="relative flex items-center justify-center">
+              {/* Glow effect behind mascot */}
               <div 
                 className="absolute w-[400px] h-[400px] rounded-full blur-3xl"
                 style={{
-                  background: `radial-gradient(circle, rgba(0, 255, 65, ${0.15 * glowIntensity}) 0%, transparent 70%)`,
+                  background: `radial-gradient(circle, rgba(0, 255, 65, ${0.2 * glowIntensity}) 0%, transparent 70%)`,
                 }}
               />
               
-              {/* Specimen Container */}
+              {/* Mascot Container */}
               <div className="relative terminal-panel p-8 w-full max-w-md">
                 <div className="absolute top-3 left-3 flex items-center gap-2">
                   <div className="w-2 h-2 bg-terminal-green rounded-full animate-pulse" />
                   <span className="text-terminal-muted text-xs">CLAWVOLUTION-001</span>
                 </div>
                 
-                {/* ASCII Art Specimen */}
-                <div className="py-12 flex items-center justify-center">
-                  <pre className="text-terminal-green text-xs leading-tight font-mono glow-green select-none"
-                    style={{ filter: `brightness(${glowIntensity})` }}
+                {/* Mascot Image */}
+                <div className="py-8 flex items-center justify-center">
+                  <div 
+                    className="relative"
+                    style={{ 
+                      filter: `drop-shadow(0 0 ${20 * glowIntensity}px rgba(0, 255, 65, 0.5))`,
+                      animation: 'float 4s ease-in-out infinite',
+                    }}
                   >
-{`
-        ████████        
-      ██        ██      
-    ██    ████    ██    
-    ██  ██    ██  ██    
-  ██    ██    ██    ██  
-  ██      ████      ██  
-  ██                ██  
-    ██            ██    
-      ██        ██      
-        ████████        
-           ██           
-         ██████         
-        ████████        
-`}
-                  </pre>
+                    <Image
+                      src="/mascot.png"
+                      alt="Clawvolution Specimen"
+                      width={280}
+                      height={280}
+                      className="pixelated"
+                      style={{
+                        imageRendering: 'pixelated',
+                      }}
+                      priority
+                    />
+                  </div>
                 </div>
 
                 {/* Status bar */}
@@ -292,7 +294,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={20} />
-              <span className="font-pixel text-xs text-terminal-muted">SPECIMEN PROTOCOL</span>
+              <span className="font-pixel text-xs text-terminal-muted">CLAWVOLUTION</span>
             </div>
             <div className="text-terminal-dim text-xs">
               Observe. Evolve. Transcend.
@@ -300,6 +302,14 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Float animation keyframes */}
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+      `}</style>
     </div>
   );
 }

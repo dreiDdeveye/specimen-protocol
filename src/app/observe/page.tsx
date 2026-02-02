@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SpecimenRenderer, EvolutionHUD, ChatConsole, UsernameModal } from '@/components';
+import DexChart from '@/components/DexChart';
 import { SpecimenIcon, TerminalIcon, AlertIcon } from '@/icons';
 import {
   generateFingerprint,
@@ -13,6 +14,7 @@ import type { SpecimenState, EvolutionStage, ChatMessage } from '@/types';
 
 // Token address for DexScreener - change this to your token
 const TOKEN_ADDRESS = '4T7XUugzhMtqxY8F7fmYaBGQyd6D7KdNJR7MvzVVpump';
+const CHAIN_ID = 'solana'; // or 'ethereum', 'bsc', etc.
 const MARKET_CAP_POLL_INTERVAL = 30000; // 30 seconds
 
 export default function ObservePage() {
@@ -82,7 +84,7 @@ export default function ObservePage() {
   // Fetch specimen state - no dependencies to avoid stale closures
   const fetchSpecimenState = useCallback(async () => {
     try {
-      const res = await fetch('/api/specimen', { cache: 'no-store' });
+      const res = await fetch('/api/specimen?t=' + Date.now(), { cache: 'no-store' });
       const data = await res.json();
 
       if (data.success && data.state && data.stage) {
@@ -98,7 +100,7 @@ export default function ObservePage() {
         setCurrentStage(data.stage);
         setNextStage(data.nextStage || null);
         
-       const marketCap = data.state?.market_cap || 0;
+        const marketCap = data.state?.market_cap || 0;
         console.log(`[Specimen] Updated - Stage: ${data.stage?.name || 'Unknown'}, Market Cap: $${marketCap.toLocaleString()}`);
       } else {
         console.error('[Specimen] Invalid response:', data);
@@ -112,7 +114,7 @@ export default function ObservePage() {
   const fetchMarketCap = useCallback(async () => {
     try {
       console.log('[DexScreener] Fetching market cap...');
-      const res = await fetch('/api/dexscreener', {
+      const res = await fetch('/api/dexscreener?t=' + Date.now(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: TOKEN_ADDRESS }),
@@ -135,7 +137,7 @@ export default function ObservePage() {
   // Fetch chat messages
   const fetchMessages = useCallback(async () => {
     try {
-      const res = await fetch('/api/chat', { cache: 'no-store' });
+      const res = await fetch('/api/chat?t=' + Date.now(), { cache: 'no-store' });
       const data = await res.json();
 
       if (data.success) {
@@ -323,7 +325,7 @@ export default function ObservePage() {
       </section>
 
       {/* Section 2: Status and Chat Panels */}
-      <section className="min-h-screen w-full bg-[#0a0f0a] py-8">
+      <section className="w-full bg-[#0a0f0a] py-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left - Specimen Status */}
@@ -338,7 +340,7 @@ export default function ObservePage() {
             </div>
 
             {/* Right - Observer Feed / Chat */}
-            <div className="h-[400px]">
+            <div className="h-[450px]">
               <ChatConsole
                 messages={messages}
                 onSendMessage={handleSendMessage}
@@ -350,6 +352,16 @@ export default function ObservePage() {
               />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Section 3: DexScreener Chart */}
+      <section className="w-full bg-[#0a0f0a] py-8 border-t border-terminal-border/30">
+        <div className="max-w-7xl mx-auto px-4">
+          <DexChart 
+            tokenAddress={TOKEN_ADDRESS}
+            chainId={CHAIN_ID}
+          />
         </div>
       </section>
 
