@@ -161,15 +161,15 @@ export async function POST(request: NextRequest) {
       // ===== SPECIMEN CONTROL =====
       case 'updateMarketCap':
         const mcResult = await updateMarketCap(params.marketCap);
-        return NextResponse.json({ success: true, ...mcResult });
+        return NextResponse.json({ ...mcResult, success: true });
 
       case 'forceEvolution':
         const evolveResult = await forceEvolution(params.stage);
-        return NextResponse.json({ success: true, ...evolveResult });
+        return NextResponse.json({ ...evolveResult, success: true });
 
       case 'resetSpecimen':
         const resetResult = await resetSpecimen();
-        return NextResponse.json({ success: true, ...resetResult });
+        return NextResponse.json({ ...resetResult, success: true });
 
       // ===== EVOLUTION STAGES =====
       case 'upsertStage':
