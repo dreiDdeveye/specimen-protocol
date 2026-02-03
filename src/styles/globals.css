@@ -8,18 +8,18 @@
   --font-pixel: 'Press Start 2P', monospace;
   --font-mono: 'Share Tech Mono', 'VT323', monospace;
   
-  --terminal-bg: #0a0a0f;
-  --terminal-surface: #12121a;
-  --terminal-border: #1e1e2e;
-  --terminal-highlight: #2a2a3e;
-  --terminal-green: #00ff41;
-  --terminal-cyan: #00d4ff;
-  --terminal-amber: #ffb000;
-  --terminal-red: #ff3366;
-  --terminal-purple: #a855f7;
-  --terminal-dim: #3a3a4a;
-  --terminal-text: #e0e0e0;
-  --terminal-muted: #6a6a7a;
+  --terminal-bg: #0a0505;
+  --terminal-surface: #1a0a08;
+  --terminal-border: #2e1510;
+  --terminal-highlight: #3e2520;
+  --terminal-green: #ff6b35;
+  --terminal-cyan: #ff8c00;
+  --terminal-amber: #ffaa00;
+  --terminal-red: #ff2222;
+  --terminal-purple: #ff4444;
+  --terminal-dim: #4a2a2a;
+  --terminal-text: #f0e0d0;
+  --terminal-muted: #8a6a5a;
 }
 
 * {
@@ -39,8 +39,8 @@ body {
   padding: 0;
   min-height: 100vh;
   background: 
-    radial-gradient(ellipse at top, rgba(0, 255, 65, 0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom, rgba(0, 212, 255, 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse at top, rgba(255, 107, 53, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(255, 140, 0, 0.03) 0%, transparent 50%),
     var(--terminal-bg);
 }
 
@@ -121,14 +121,14 @@ body::after {
   background: var(--terminal-surface);
   border: 1px solid var(--terminal-border);
   box-shadow: 
-    0 0 20px rgba(0, 255, 65, 0.05),
+    0 0 20px rgba(255, 107, 53, 0.08),
     inset 0 0 60px rgba(0, 0, 0, 0.3);
 }
 
 .terminal-panel-glow {
   box-shadow: 
-    0 0 30px rgba(0, 255, 65, 0.1),
-    0 0 60px rgba(0, 255, 65, 0.05),
+    0 0 30px rgba(255, 107, 53, 0.15),
+    0 0 60px rgba(255, 107, 53, 0.08),
     inset 0 0 60px rgba(0, 0, 0, 0.3);
 }
 
@@ -145,7 +145,7 @@ input, textarea {
 
 input:focus, textarea:focus {
   border-color: var(--terminal-green);
-  box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.3);
 }
 
 input::placeholder, textarea::placeholder {
@@ -181,8 +181,8 @@ button.primary {
 }
 
 button.primary:hover:not(:disabled) {
-  background: #00cc33;
-  box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+  background: #ff5522;
+  box-shadow: 0 0 15px rgba(255, 107, 53, 0.4);
 }
 
 button.danger {
@@ -222,7 +222,7 @@ button.danger:hover:not(:disabled) {
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--terminal-green), var(--terminal-cyan));
+  background: linear-gradient(90deg, var(--terminal-red), var(--terminal-amber));
   transition: width 0.5s ease-out;
   box-shadow: 0 0 10px var(--terminal-green);
 }
@@ -284,7 +284,7 @@ button.danger:hover:not(:disabled) {
 .modal-content {
   background: var(--terminal-surface);
   border: 1px solid var(--terminal-green);
-  box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
+  box-shadow: 0 0 30px rgba(255, 107, 53, 0.3);
   padding: 1.5rem;
   max-width: 90vw;
   max-height: 90vh;
@@ -393,4 +393,10 @@ input[type="number"] {
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
+}
+
+/* Float animation for landing page */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }

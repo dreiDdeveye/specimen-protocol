@@ -36,12 +36,13 @@ export default function LandingPage() {
         {particles.map((particle) => (
           <div
             key={particle.id}
-            className="absolute rounded-full bg-terminal-green opacity-20"
+            className="absolute rounded-full opacity-20"
             style={{
               left: `${particle.x}%`,
               top: `${particle.y}%`,
               width: `${particle.size}px`,
               height: `${particle.size}px`,
+              backgroundColor: '#ff6b35',
               animation: `float ${particle.speed + 3}s ease-in-out infinite`,
               animationDelay: `${particle.id * 0.1}s`,
             }}
@@ -51,9 +52,9 @@ export default function LandingPage() {
 
       {/* Gradient overlays */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-terminal-green/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-terminal-cyan/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-terminal-purple/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full blur-3xl" style={{ backgroundColor: 'rgba(255, 107, 53, 0.05)' }} />
+        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl" style={{ backgroundColor: 'rgba(255, 140, 0, 0.05)' }} />
+        <div className="absolute top-1/2 right-0 w-[500px] h-[500px] rounded-full blur-3xl" style={{ backgroundColor: 'rgba(255, 68, 68, 0.05)' }} />
       </div>
 
       {/* Header */}
@@ -108,7 +109,8 @@ export default function LandingPage() {
               <div className="flex flex-wrap gap-4">
                 <Link 
                   href="/observe"
-                  className="group px-6 py-3 bg-terminal-green text-terminal-bg font-medium hover:shadow-glow-green transition-all flex items-center gap-2"
+                  className="group px-6 py-3 bg-terminal-green text-terminal-bg font-medium transition-all flex items-center gap-2"
+                  style={{ boxShadow: '0 0 15px rgba(255, 107, 53, 0.3)' }}
                 >
                   <TerminalIcon size={18} />
                   <span>Enter Laboratory</span>
@@ -145,7 +147,7 @@ export default function LandingPage() {
               <div 
                 className="absolute w-[400px] h-[400px] rounded-full blur-3xl"
                 style={{
-                  background: `radial-gradient(circle, rgba(0, 255, 65, ${0.2 * glowIntensity}) 0%, transparent 70%)`,
+                  background: `radial-gradient(circle, rgba(255, 107, 53, ${0.25 * glowIntensity}) 0%, transparent 70%)`,
                 }}
               />
               
@@ -161,7 +163,7 @@ export default function LandingPage() {
                   <div 
                     className="relative"
                     style={{ 
-                      filter: `drop-shadow(0 0 ${20 * glowIntensity}px rgba(0, 255, 65, 0.5))`,
+                      filter: `drop-shadow(0 0 ${20 * glowIntensity}px rgba(255, 107, 53, 0.6))`,
                       animation: 'float 4s ease-in-out infinite',
                     }}
                   >
@@ -187,7 +189,7 @@ export default function LandingPage() {
                   </div>
                   <div className="mt-2 h-2 bg-terminal-bg border border-terminal-border">
                     <div 
-                      className="h-full bg-gradient-to-r from-terminal-green to-terminal-cyan transition-all"
+                      className="h-full bg-gradient-to-r from-terminal-red to-terminal-amber transition-all"
                       style={{ width: '15%' }}
                     />
                   </div>
@@ -209,32 +211,21 @@ export default function LandingPage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
-              {[
-                {
-                  icon: ChartIcon,
-                  title: 'MARKET DRIVEN',
-                  description: 'The specimen\'s evolution is tied to real market cap data, creating a living representation of market sentiment.',
-                  color: 'terminal-green',
-                },
-                {
-                  icon: EvolutionIcon,
-                  title: 'FIVE STAGES',
-                  description: 'From EMBRYO to MATURE, witness the transformation as market milestones trigger evolutionary leaps.',
-                  color: 'terminal-cyan',
-                },
-                {
-                  icon: UserIcon,
-                  title: 'COMMUNITY',
-                  description: 'Join other observers in the laboratory. Chat, watch, and be part of this experimental journey.',
-                  color: 'terminal-purple',
-                },
-              ].map((item, i) => (
-                <div key={i} className="terminal-panel p-6 hover:border-terminal-highlight transition-colors">
-                  <item.icon className={`text-${item.color} mb-4`} size={32} />
-                  <h3 className={`font-pixel text-sm text-${item.color} mb-3`}>{item.title}</h3>
-                  <p className="text-terminal-muted text-sm">{item.description}</p>
-                </div>
-              ))}
+              <div className="terminal-panel p-6 hover:border-terminal-highlight transition-colors">
+                <ChartIcon className="text-terminal-green mb-4" size={32} />
+                <h3 className="font-pixel text-sm text-terminal-green mb-3">MARKET DRIVEN</h3>
+                <p className="text-terminal-muted text-sm">The specimen's evolution is tied to real market cap data, creating a living representation of market sentiment.</p>
+              </div>
+              <div className="terminal-panel p-6 hover:border-terminal-highlight transition-colors">
+                <EvolutionIcon className="text-terminal-cyan mb-4" size={32} />
+                <h3 className="font-pixel text-sm text-terminal-cyan mb-3">FIVE STAGES</h3>
+                <p className="text-terminal-muted text-sm">From EMBRYO to MATURE, witness the transformation as market milestones trigger evolutionary leaps.</p>
+              </div>
+              <div className="terminal-panel p-6 hover:border-terminal-highlight transition-colors">
+                <UserIcon className="text-terminal-purple mb-4" size={32} />
+                <h3 className="font-pixel text-sm text-terminal-purple mb-3">COMMUNITY</h3>
+                <p className="text-terminal-muted text-sm">Join other observers in the laboratory. Chat, watch, and be part of this experimental journey.</p>
+              </div>
             </div>
           </div>
         </section>
@@ -250,19 +241,31 @@ export default function LandingPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {[
-                { stage: 1, name: 'EMBRYO', cap: '$0', color: 'terminal-green' },
-                { stage: 2, name: 'LARVA', cap: '$10K', color: 'terminal-cyan' },
-                { stage: 3, name: 'PUPA', cap: '$100K', color: 'terminal-amber' },
-                { stage: 4, name: 'JUVENILE', cap: '$500K', color: 'terminal-red' },
-                { stage: 5, name: 'MATURE', cap: '$1M', color: 'terminal-purple' },
-              ].map((stage) => (
-                <div key={stage.stage} className="terminal-panel p-4 text-center">
-                  <div className={`font-pixel text-3xl text-${stage.color} mb-2`}>{stage.stage}</div>
-                  <div className={`font-pixel text-xs text-${stage.color} mb-1`}>{stage.name}</div>
-                  <div className="text-terminal-muted text-xs">{stage.cap}</div>
-                </div>
-              ))}
+              <div className="terminal-panel p-4 text-center">
+                <div className="font-pixel text-3xl text-terminal-green mb-2">1</div>
+                <div className="font-pixel text-xs text-terminal-green mb-1">EMBRYO</div>
+                <div className="text-terminal-muted text-xs">$0</div>
+              </div>
+              <div className="terminal-panel p-4 text-center">
+                <div className="font-pixel text-3xl text-terminal-cyan mb-2">2</div>
+                <div className="font-pixel text-xs text-terminal-cyan mb-1">LARVA</div>
+                <div className="text-terminal-muted text-xs">$10K</div>
+              </div>
+              <div className="terminal-panel p-4 text-center">
+                <div className="font-pixel text-3xl text-terminal-amber mb-2">3</div>
+                <div className="font-pixel text-xs text-terminal-amber mb-1">PUPA</div>
+                <div className="text-terminal-muted text-xs">$100K</div>
+              </div>
+              <div className="terminal-panel p-4 text-center">
+                <div className="font-pixel text-3xl text-terminal-red mb-2">4</div>
+                <div className="font-pixel text-xs text-terminal-red mb-1">JUVENILE</div>
+                <div className="text-terminal-muted text-xs">$500K</div>
+              </div>
+              <div className="terminal-panel p-4 text-center">
+                <div className="font-pixel text-3xl text-terminal-purple mb-2">5</div>
+                <div className="font-pixel text-xs text-terminal-purple mb-1">MATURE</div>
+                <div className="text-terminal-muted text-xs">$1M</div>
+              </div>
             </div>
           </div>
         </section>
@@ -279,7 +282,8 @@ export default function LandingPage() {
             </p>
             <Link 
               href="/observe"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-terminal-green text-terminal-bg font-pixel text-sm hover:shadow-glow-green transition-all"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-terminal-green text-terminal-bg font-pixel text-sm transition-all"
+              style={{ boxShadow: '0 0 20px rgba(255, 107, 53, 0.4)' }}
             >
               <TerminalIcon size={18} />
               ENTER LABORATORY

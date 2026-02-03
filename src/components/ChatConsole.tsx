@@ -21,6 +21,41 @@ interface SystemMessage {
   timestamp: Date;
 }
 
+// Reaction GIFs - expanded collection
+const REACTION_GIFS = [
+  // Hype & Celebration
+  { id: 'rocket', label: '🚀', url: 'https://media.giphy.com/media/mi6DsSSNKDbUY/giphy.gif', alt: 'To the moon!' },
+  { id: 'money', label: '💰', url: 'https://media.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif', alt: 'Money rain' },
+  { id: 'pump', label: '📈', url: 'https://media.giphy.com/media/n0xHORz5gp904/giphy.gif', alt: 'Pump it!' },
+  { id: 'dance', label: '💃', url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif', alt: 'Dance' },
+  { id: 'fire', label: '🔥', url: 'https://media.giphy.com/media/j6uK36y32LxQs/giphy.gif', alt: 'Fire' },
+  { id: 'clap', label: '👏', url: 'https://media.giphy.com/media/7rj2ZgttvgomY/giphy.gif', alt: 'Clapping' },
+  { id: 'crab', label: '🦀', url: 'https://media.giphy.com/media/2dK0W3oUksQk0Xz8OK/giphy.gif', alt: 'Crab rave' },
+  { id: 'lfg', label: '🏎️', url: 'https://media.giphy.com/media/3oriNZoNvn73MZaFYk/giphy.gif', alt: 'LFG!' },
+  
+  // Reactions
+  { id: 'wow', label: '😮', url: 'https://media.giphy.com/media/l0MYGb1LuZ3n7dRnO/giphy.gif', alt: 'Wow' },
+  { id: 'mindblown', label: '🤯', url: 'https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/giphy.gif', alt: 'Mind blown' },
+  { id: 'yes', label: '✅', url: 'https://media.giphy.com/media/3oriO5t2QB4IPKgxHi/giphy.gif', alt: 'Yes!' },
+  { id: 'no', label: '❌', url: 'https://media.giphy.com/media/JYZ397GsFrFtu/giphy.gif', alt: 'No!' },
+  { id: 'think', label: '🤔', url: 'https://media.giphy.com/media/a5viI92PAF89q/giphy.gif', alt: 'Thinking' },
+  { id: 'laugh', label: '😂', url: 'https://media.giphy.com/media/10JhviFuU2gWD6/giphy.gif', alt: 'Laughing' },
+  { id: 'cry', label: '😢', url: 'https://media.giphy.com/media/d2lcHJTG5Tscg/giphy.gif', alt: 'Crying' },
+  { id: 'angry', label: '😠', url: 'https://media.giphy.com/media/l1J9u3TZfpmeDLkD6/giphy.gif', alt: 'Angry' },
+  
+  // Actions
+  { id: 'hodl', label: '💎', url: 'https://media.giphy.com/media/d0DdMCREQChi3jGymW/giphy.gif', alt: 'Diamond hands' },
+  { id: 'buy', label: '🛒', url: 'https://media.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif', alt: 'Buy buy buy' },
+  { id: 'wait', label: '⏳', url: 'https://media.giphy.com/media/tXL4FHPSnVJ0A/giphy.gif', alt: 'Waiting' },
+  { id: 'sleep', label: '😴', url: 'https://media.giphy.com/media/xT8qBvOmIEWXxVPdxS/giphy.gif', alt: 'Sleeping' },
+  
+  // Animals & Fun
+  { id: 'cat', label: '🐱', url: 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif', alt: 'Cat typing' },
+  { id: 'dog', label: '🐕', url: 'https://media.giphy.com/media/mCRJDo24UvJMA/giphy.gif', alt: 'Dog' },
+  { id: 'frog', label: '🐸', url: 'https://media.giphy.com/media/kFgzrTt798d2w/giphy.gif', alt: 'Pepe' },
+  { id: 'ape', label: '🦍', url: 'https://media.giphy.com/media/9wLKh6ms5t9qE/giphy.gif', alt: 'Ape together strong' },
+];
+
 // Generate consistent color from username
 const getUserColor = (username: string): string => {
   const colors = [
@@ -45,6 +80,18 @@ const getInitials = (username: string): string => {
   return username.slice(0, 2).toUpperCase();
 };
 
+// Check if message is a GIF
+const isGifMessage = (message: string): string | null => {
+  const gif = REACTION_GIFS.find(g => message === `[GIF:${g.id}]`);
+  return gif ? gif.url : null;
+};
+
+// Get GIF alt text
+const getGifAlt = (message: string): string => {
+  const gif = REACTION_GIFS.find(g => message === `[GIF:${g.id}]`);
+  return gif ? gif.alt : 'GIF';
+};
+
 export const ChatConsole: React.FC<ChatConsoleProps> = ({
   messages = [],
   onSendMessage,
@@ -59,8 +106,10 @@ export const ChatConsole: React.FC<ChatConsoleProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [systemMessages, setSystemMessages] = useState<SystemMessage[]>([]);
+  const [showGifPicker, setShowGifPicker] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const gifPickerRef = useRef<HTMLDivElement>(null);
 
   // Count unique users from recent messages
   const onlineCount = useMemo(() => {
@@ -77,7 +126,7 @@ export const ChatConsole: React.FC<ChatConsoleProps> = ({
     return Math.max(1, recentUsers.size);
   }, [messages]);
 
-  // Auto-scroll to bottom - ONLY inside the chat container
+  // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -103,6 +152,17 @@ export const ChatConsole: React.FC<ChatConsoleProps> = ({
     const timer = setTimeout(() => setError(null), 3000);
     return () => clearTimeout(timer);
   }, [error]);
+
+  // Close GIF picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (gifPickerRef.current && !gifPickerRef.current.contains(event.target as Node)) {
+        setShowGifPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,6 +190,27 @@ export const ChatConsole: React.FC<ChatConsoleProps> = ({
       }
     } catch (err) {
       setError('Failed to send message');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleSendGif = async (gifId: string) => {
+    if (!username || !chatEnabled || cooldown > 0 || isSending) return;
+
+    setIsSending(true);
+    setError(null);
+    setShowGifPicker(false);
+
+    try {
+      const result = await onSendMessage(`[GIF:${gifId}]`);
+      if (result.success) {
+        setCooldown(cooldownSeconds);
+      } else {
+        setError(result.error || 'Failed to send GIF');
+      }
+    } catch (err) {
+      setError('Failed to send GIF');
     } finally {
       setIsSending(false);
     }
@@ -223,6 +304,7 @@ export const ChatConsole: React.FC<ChatConsoleProps> = ({
             const msg = item.data as ChatMessage;
             const isOwnMessage = msg.username === username;
             const userColor = getUserColor(msg.username);
+            const gifUrl = isGifMessage(msg.message);
 
             return (
               <div
@@ -260,10 +342,21 @@ export const ChatConsole: React.FC<ChatConsoleProps> = ({
                     </span>
                   </div>
                   
-                  {/* Message */}
-                  <p className="text-terminal-text text-sm break-words leading-relaxed">
-                    {msg.message}
-                  </p>
+                  {/* Message or GIF */}
+                  {gifUrl ? (
+                    <div className="mt-1">
+                      <img 
+                        src={gifUrl} 
+                        alt={getGifAlt(msg.message)}
+                        className="max-w-[200px] max-h-[150px] rounded border border-terminal-border"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-terminal-text text-sm break-words leading-relaxed">
+                      {msg.message}
+                    </p>
+                  )}
                 </div>
               </div>
             );
@@ -279,6 +372,45 @@ export const ChatConsole: React.FC<ChatConsoleProps> = ({
         </div>
       )}
 
+      {/* GIF Picker */}
+      {showGifPicker && (
+        <div 
+          ref={gifPickerRef}
+          className="absolute bottom-20 left-3 right-3 bg-terminal-surface border border-terminal-border rounded-lg p-3 shadow-lg z-50"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-pixel text-xs text-terminal-green">SEND A REACTION</span>
+            <button 
+              onClick={() => setShowGifPicker(false)}
+              className="text-terminal-muted hover:text-terminal-text text-lg leading-none px-2"
+            >
+              ×
+            </button>
+          </div>
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[250px] overflow-y-auto">
+            {REACTION_GIFS.map(gif => (
+              <button
+                key={gif.id}
+                onClick={() => handleSendGif(gif.id)}
+                disabled={isSending || cooldown > 0}
+                className="relative group aspect-square rounded border border-terminal-border overflow-hidden hover:border-terminal-green transition-colors disabled:opacity-50"
+                title={gif.alt}
+              >
+                <img 
+                  src={gif.url} 
+                  alt={gif.alt}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-terminal-bg/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-xl">{gif.label}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input Area */}
       <form onSubmit={handleSubmit} className="p-3 border-t border-terminal-border bg-terminal-bg/30">
         {!chatEnabled ? (
@@ -291,6 +423,23 @@ export const ChatConsole: React.FC<ChatConsoleProps> = ({
           </div>
         ) : (
           <div className="flex gap-2">
+            {/* GIF Button */}
+            <button
+              type="button"
+              onClick={() => setShowGifPicker(!showGifPicker)}
+              disabled={isSending || cooldown > 0}
+              className={cn(
+                "px-3 py-2 rounded border transition-all text-lg",
+                showGifPicker 
+                  ? "bg-terminal-green/20 border-terminal-green text-terminal-green"
+                  : "bg-terminal-bg border-terminal-border text-terminal-muted hover:border-terminal-green hover:text-terminal-green",
+                (isSending || cooldown > 0) && "opacity-50 cursor-not-allowed"
+              )}
+              title="Send GIF"
+            >
+              🎬
+            </button>
+
             <div className="flex-1 relative">
               <input
                 ref={inputRef}
