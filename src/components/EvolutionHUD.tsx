@@ -80,17 +80,12 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
       }, 500);
     };
 
-    // Initial message
     changeMessage();
-
-    // Change message every 8 seconds
     const interval = setInterval(changeMessage, 8000);
     return () => clearInterval(interval);
   }, []);
 
-  const getStageColor = (stageNum: number) => {
-    return STAGES.find(s => s.stage === stageNum)?.color || 'terminal-green';
-  };
+  const currentStageNum = stage.stage;
 
   return (
     <div className="terminal-panel p-4 h-[450px] flex flex-col relative overflow-hidden">
@@ -150,41 +145,61 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
         </div>
       </div>
 
-      {/* Evolution Timeline */}
+      {/* Evolution Timeline - Hidden Stages */}
       <div className="mb-3 p-3 bg-terminal-bg/30 border border-terminal-border/50 rounded">
         <div className="flex items-center justify-between mb-3">
           <span className="text-terminal-muted text-xs uppercase">Evolution Timeline</span>
+          <span className="text-terminal-dim text-xs">{currentStageNum}/???</span>
         </div>
         <div className="flex items-center gap-1">
           {STAGES.map((s, i) => {
-            const isCompleted = stage.stage > s.stage;
-            const isCurrent = stage.stage === s.stage;
-            const isPending = stage.stage < s.stage;
+            const isUnlocked = currentStageNum >= s.stage;
+            const isCurrent = currentStageNum === s.stage;
+            const isNext = currentStageNum + 1 === s.stage;
             
             return (
               <React.Fragment key={s.stage}>
                 <div className="flex flex-col items-center flex-1">
-                  <div 
-                    className={cn(
-                      "w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-pixel transition-all duration-300",
-                      isCompleted && `bg-${s.color}/20 border-${s.color} text-${s.color}`,
-                      isCurrent && `bg-${s.color} border-${s.color} text-terminal-bg shadow-lg`,
-                      isPending && "bg-terminal-bg border-terminal-border text-terminal-dim"
-                    )}
-                    style={isCurrent ? { 
-                      boxShadow: `0 0 ${15 * glowPulse}px rgba(0, 255, 65, 0.5)`,
-                    } : {}}
-                  >
-                    {s.stage}
-                  </div>
-                  <span className={cn(
-                    "text-[10px] mt-1 font-pixel",
-                    isCompleted && `text-${s.color}`,
-                    isCurrent && `text-${s.color}`,
-                    isPending && "text-terminal-dim"
-                  )}>
-                    {s.name}
-                  </span>
+                  {isUnlocked ? (
+                    // Unlocked stage - show details
+                    <>
+                      <div 
+                        className={cn(
+                          "w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-pixel transition-all duration-300",
+                          isCurrent 
+                            ? `bg-${s.color} border-${s.color} text-terminal-bg shadow-lg`
+                            : `bg-${s.color}/20 border-${s.color} text-${s.color}`
+                        )}
+                        style={isCurrent ? { 
+                          boxShadow: `0 0 ${15 * glowPulse}px rgba(0, 255, 65, 0.5)`,
+                        } : {}}
+                      >
+                        {s.stage}
+                      </div>
+                      <span className={cn(
+                        "text-[10px] mt-1 font-pixel",
+                        `text-${s.color}`
+                      )}>
+                        {s.name}
+                      </span>
+                    </>
+                  ) : (
+                    // Locked stage - show mystery
+                    <>
+                      <div 
+                        className={cn(
+                          "w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-pixel transition-all duration-300",
+                          "bg-terminal-bg border-terminal-border text-terminal-dim",
+                          isNext && "border-terminal-border/50 animate-pulse"
+                        )}
+                      >
+                        ?
+                      </div>
+                      <span className="text-[10px] mt-1 font-pixel text-terminal-dim">
+                        ???
+                      </span>
+                    </>
+                  )}
                 </div>
                 
                 {i < STAGES.length - 1 && (
@@ -192,7 +207,9 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
                     <div 
                       className={cn(
                         "h-full transition-all duration-500",
-                        stage.stage > s.stage ? `bg-${s.color}` : "bg-terminal-border"
+                        currentStageNum > s.stage 
+                          ? `bg-${s.color}` 
+                          : "bg-terminal-border/30"
                       )}
                     />
                   </div>
@@ -269,12 +286,12 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
           )}
         </div>
 
-        {/* Next Stage Info */}
+        {/* Next Stage Info - Show market cap but hide name */}
         {nextStage ? (
           <div className="mt-3 flex items-center justify-between text-xs p-2 bg-terminal-bg/30 rounded border border-terminal-border/30">
             <span className="text-terminal-muted flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-terminal-cyan animate-pulse" />
-              Next: <span className="text-terminal-cyan font-pixel">{nextStage.name}</span>
+              Next: <span className="text-terminal-cyan font-pixel">???</span>
             </span>
             <span className="text-terminal-amber font-pixel">
               @ {formatMarketCap(Number(nextStage.market_cap_required))}

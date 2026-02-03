@@ -4,10 +4,17 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SpecimenIcon, EvolutionIcon, TerminalIcon, ChartIcon, UserIcon } from '@/icons';
+import MysteryPopup from './MysteryPopup';
+import { TypewriterText } from '@/hooks/useTypewriter';
 
 export default function LandingPage() {
   const [glowIntensity, setGlowIntensity] = useState(1);
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; size: number; speed: number }>>([]);
+  const [showPopup, setShowPopup] = useState(true);
+  const [typingStep, setTypingStep] = useState(0);
+
+  // Start landing page typing after popup closes
+  const startLandingTyping = !showPopup;
 
   // Glow animation
   useEffect(() => {
@@ -30,7 +37,10 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden bg-terminal-bg">
+      {/* Mystery Popup */}
+      {showPopup && <MysteryPopup onClose={() => setShowPopup(false)} />}
+
       {/* Animated background particles */}
       <div className="fixed inset-0 pointer-events-none">
         {particles.map((particle) => (
@@ -58,16 +68,44 @@ export default function LandingPage() {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 border-b border-terminal-border/50">
+      <header className={`relative z-10 border-b border-terminal-border/50 bg-terminal-bg/80 backdrop-blur-sm transition-opacity duration-500 ${startLandingTyping ? 'opacity-100' : 'opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <SpecimenIcon className="text-terminal-green" size={28} />
-            <span className="font-pixel text-sm text-terminal-green tracking-wider">CLAWVOLUTION</span>
-          </div>
-          <nav className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-3">
+            <Image 
+              src="/logo.png" 
+              alt="Clawvolution" 
+              width={32} 
+              height={32}
+              className="pixelated"
+              style={{ imageRendering: 'pixelated' }}
+            />
+            <span className="font-pixel text-sm text-terminal-green tracking-wider">
+              {startLandingTyping && (
+                <TypewriterText 
+                  text="CLAWVOLUTION" 
+                  speed={50} 
+                  delay={0}
+                  onComplete={() => setTypingStep(1)}
+                  cursor={typingStep === 0}
+                />
+              )}
+            </span>
+          </Link>
+          <nav className={`flex items-center gap-6 transition-opacity duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
+            <a 
+              href="https://x.com/clawvolution" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/70 hover:text-terminal-green transition-colors"
+              aria-label="X (Twitter)"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </a>
             <Link 
               href="/observe" 
-              className="text-terminal-muted hover:text-terminal-green transition-colors text-sm"
+              className="text-white/70 hover:text-terminal-green transition-colors text-sm"
             >
               Observe
             </Link>
@@ -86,27 +124,71 @@ export default function LandingPage() {
         <section className="max-w-7xl mx-auto px-6 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left side - Text */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-terminal-green/10 border border-terminal-green/30 mb-6">
+            <div className={`transition-opacity duration-500 ${startLandingTyping ? 'opacity-100' : 'opacity-0'}`}>
+              <div className={`inline-flex items-center gap-2 px-3 py-1 bg-terminal-green/10 border border-terminal-green/30 mb-6 transition-opacity duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="w-2 h-2 bg-terminal-green rounded-full animate-pulse" />
-                <span className="text-terminal-green text-xs uppercase tracking-wider">Live Experiment</span>
+                <span className="text-terminal-green text-xs uppercase tracking-wider">
+                  {typingStep >= 1 && (
+                    <TypewriterText 
+                      text="Live Experiment" 
+                      speed={40} 
+                      delay={200}
+                      onComplete={() => setTypingStep(2)}
+                      cursor={typingStep === 1}
+                    />
+                  )}
+                </span>
               </div>
               
-              <h1 className="text-4xl lg:text-6xl font-pixel text-terminal-text leading-tight mb-6">
-                <span className="text-terminal-green glow-green">WITNESS</span>
-                <br />
-                <span className="text-terminal-cyan">EVOLUTION</span>
-                <br />
-                <span className="text-terminal-purple">IN REAL-TIME</span>
+              <h1 className="text-4xl lg:text-6xl font-pixel leading-tight mb-6">
+                <span className="text-terminal-green block min-h-[1.2em]">
+                  {typingStep >= 2 && (
+                    <TypewriterText 
+                      text="WITNESS" 
+                      speed={80} 
+                      delay={0}
+                      onComplete={() => setTypingStep(3)}
+                      cursor={typingStep === 2}
+                    />
+                  )}
+                </span>
+                <span className="text-terminal-cyan block min-h-[1.2em]">
+                  {typingStep >= 3 && (
+                    <TypewriterText 
+                      text="EVOLUTION" 
+                      speed={80} 
+                      delay={0}
+                      onComplete={() => setTypingStep(4)}
+                      cursor={typingStep === 3}
+                    />
+                  )}
+                </span>
+                <span className="text-terminal-purple block min-h-[1.2em]">
+                  {typingStep >= 4 && (
+                    <TypewriterText 
+                      text="IN REAL-TIME" 
+                      speed={80} 
+                      delay={0}
+                      onComplete={() => setTypingStep(5)}
+                      cursor={typingStep === 4}
+                    />
+                  )}
+                </span>
               </h1>
               
-              <p className="text-terminal-muted text-lg mb-8 max-w-lg">
-                A living digital organism that evolves based on market forces. 
-                Watch as it transforms through five stages of existence, 
-                driven by the collective energy of the market.
+              <p className="text-white/80 text-lg mb-8 max-w-lg leading-relaxed min-h-[4.5rem]">
+                {typingStep >= 5 && (
+                  <TypewriterText 
+                    text="A living digital organism that evolves based on market forces. Watch as it transforms through stages of existence, driven by the collective energy of the market." 
+                    speed={15} 
+                    delay={0}
+                    onComplete={() => setTypingStep(6)}
+                    cursor={typingStep === 5}
+                  />
+                )}
               </p>
 
-              <div className="flex flex-wrap gap-4">
+              <div className={`flex flex-wrap gap-4 transition-opacity duration-500 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
                 <Link 
                   href="/observe"
                   className="group px-6 py-3 bg-terminal-green text-terminal-bg font-medium transition-all flex items-center gap-2"
@@ -117,7 +199,7 @@ export default function LandingPage() {
                 </Link>
                 <a 
                   href="#how-it-works"
-                  className="px-6 py-3 border border-terminal-border text-terminal-text hover:border-terminal-cyan hover:text-terminal-cyan transition-all flex items-center gap-2"
+                  className="px-6 py-3 border border-white/30 text-white hover:border-terminal-cyan hover:text-terminal-cyan transition-all flex items-center gap-2"
                 >
                   <ChartIcon size={18} />
                   <span>Learn More</span>
@@ -125,24 +207,24 @@ export default function LandingPage() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-terminal-border/50">
+              <div className={`grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/10 transition-opacity duration-500 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
                 <div>
-                  <div className="font-pixel text-2xl text-terminal-green">5</div>
-                  <div className="text-terminal-muted text-sm">Evolution Stages</div>
+                  <div className="font-pixel text-2xl text-terminal-green">???</div>
+                  <div className="text-white/60 text-sm">Evolution Stages</div>
                 </div>
                 <div>
                   <div className="font-pixel text-2xl text-terminal-cyan">LIVE</div>
-                  <div className="text-terminal-muted text-sm">Global State</div>
+                  <div className="text-white/60 text-sm">Global State</div>
                 </div>
                 <div>
                   <div className="font-pixel text-2xl text-terminal-purple">24/7</div>
-                  <div className="text-terminal-muted text-sm">Active Monitoring</div>
+                  <div className="text-white/60 text-sm">Active Monitoring</div>
                 </div>
               </div>
             </div>
 
             {/* Right side - Mascot Image */}
-            <div className="relative flex items-center justify-center">
+            <div className={`relative flex items-center justify-center transition-opacity duration-700 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
               {/* Glow effect behind mascot */}
               <div 
                 className="absolute w-[400px] h-[400px] rounded-full blur-3xl"
@@ -152,10 +234,10 @@ export default function LandingPage() {
               />
               
               {/* Mascot Container */}
-              <div className="relative terminal-panel p-8 w-full max-w-md">
+              <div className="relative terminal-panel p-8 w-full max-w-md bg-terminal-surface/90">
                 <div className="absolute top-3 left-3 flex items-center gap-2">
                   <div className="w-2 h-2 bg-terminal-green rounded-full animate-pulse" />
-                  <span className="text-terminal-muted text-xs">CLAWVOLUTION-001</span>
+                  <span className="text-white/50 text-xs">CLAWVOLUTION-001</span>
                 </div>
                 
                 {/* Mascot Image */}
@@ -182,14 +264,14 @@ export default function LandingPage() {
                 </div>
 
                 {/* Status bar */}
-                <div className="border-t border-terminal-border pt-4 mt-4">
+                <div className="border-t border-white/10 pt-4 mt-4">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-terminal-muted">EVOLUTION PROGRESS</span>
-                    <span className="text-terminal-green">STAGE 1 - EMBRYO</span>
+                    <span className="text-white/50">EVOLUTION PROGRESS</span>
+                    <span className="text-terminal-green">ACTIVE</span>
                   </div>
-                  <div className="mt-2 h-2 bg-terminal-bg border border-terminal-border">
+                  <div className="mt-2 h-2 bg-terminal-bg border border-white/20 rounded">
                     <div 
-                      className="h-full bg-gradient-to-r from-terminal-red to-terminal-amber transition-all"
+                      className="h-full bg-gradient-to-r from-terminal-green to-terminal-cyan transition-all rounded"
                       style={{ width: '15%' }}
                     />
                   </div>
@@ -200,89 +282,125 @@ export default function LandingPage() {
         </section>
 
         {/* How it Works */}
-        <section id="how-it-works" className="border-t border-terminal-border/50">
+        <section id="how-it-works" className={`border-t border-white/10 bg-terminal-surface/30 transition-opacity duration-500 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
           <div className="max-w-7xl mx-auto px-6 py-20">
             <div className="text-center mb-16">
               <h2 className="font-pixel text-2xl text-terminal-cyan mb-4">HOW IT WORKS</h2>
-              <p className="text-terminal-muted max-w-2xl mx-auto">
+              <p className="text-white/70 max-w-2xl mx-auto text-base leading-relaxed">
                 The specimen responds to market activity, evolving through distinct stages 
                 as thresholds are reached.
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="terminal-panel p-6 hover:border-terminal-highlight transition-colors">
+              <div className="terminal-panel p-6 hover:border-terminal-green/50 transition-colors bg-terminal-surface/80">
                 <ChartIcon className="text-terminal-green mb-4" size={32} />
                 <h3 className="font-pixel text-sm text-terminal-green mb-3">MARKET DRIVEN</h3>
-                <p className="text-terminal-muted text-sm">The specimen's evolution is tied to real market cap data, creating a living representation of market sentiment.</p>
+                <p className="text-white/70 text-sm leading-relaxed">
+                  The specimen's evolution is tied to real market cap data, creating a living representation of market sentiment.
+                </p>
               </div>
-              <div className="terminal-panel p-6 hover:border-terminal-highlight transition-colors">
+              <div className="terminal-panel p-6 hover:border-terminal-cyan/50 transition-colors bg-terminal-surface/80">
                 <EvolutionIcon className="text-terminal-cyan mb-4" size={32} />
-                <h3 className="font-pixel text-sm text-terminal-cyan mb-3">FIVE STAGES</h3>
-                <p className="text-terminal-muted text-sm">From EMBRYO to MATURE, witness the transformation as market milestones trigger evolutionary leaps.</p>
+                <h3 className="font-pixel text-sm text-terminal-cyan mb-3">MULTIPLE STAGES</h3>
+                <p className="text-white/70 text-sm leading-relaxed">
+                  How many forms exist? Witness the transformation as market milestones trigger evolutionary leaps.
+                </p>
               </div>
-              <div className="terminal-panel p-6 hover:border-terminal-highlight transition-colors">
+              <div className="terminal-panel p-6 hover:border-terminal-purple/50 transition-colors bg-terminal-surface/80">
                 <UserIcon className="text-terminal-purple mb-4" size={32} />
                 <h3 className="font-pixel text-sm text-terminal-purple mb-3">COMMUNITY</h3>
-                <p className="text-terminal-muted text-sm">Join other observers in the laboratory. Chat, watch, and be part of this experimental journey.</p>
+                <p className="text-white/70 text-sm leading-relaxed">
+                  Join other observers in the laboratory. Chat, watch, and be part of this experimental journey.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Evolution Stages */}
-        <section className="border-t border-terminal-border/50">
+        {/* The Mystery Section */}
+        <section className={`border-t border-white/10 transition-opacity duration-500 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
           <div className="max-w-7xl mx-auto px-6 py-20">
-            <div className="text-center mb-16">
-              <h2 className="font-pixel text-2xl text-terminal-purple mb-4">EVOLUTION STAGES</h2>
-              <p className="text-terminal-muted max-w-2xl mx-auto">
-                Each stage represents a milestone in the specimen's journey.
+            <div className="text-center mb-12">
+              <h2 className="font-pixel text-2xl text-terminal-purple mb-4">THE FINAL FORM</h2>
+              <p className="text-white/70 max-w-xl mx-auto text-base">
+                What happens when the specimen reaches its ultimate evolution?
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="terminal-panel p-4 text-center">
-                <div className="font-pixel text-3xl text-terminal-green mb-2">1</div>
-                <div className="font-pixel text-xs text-terminal-green mb-1">EMBRYO</div>
-                <div className="text-terminal-muted text-xs">$0</div>
+            {/* Mystery Container */}
+            <div className="max-w-3xl mx-auto">
+              <div className="terminal-panel p-8 md:p-12 text-center relative overflow-hidden bg-terminal-surface/80">
+                {/* Animated background glow */}
+                <div 
+                  className="absolute inset-0 opacity-20"
+                  style={{
+                    background: `radial-gradient(circle at center, rgba(168, 85, 247, ${0.3 * glowIntensity}) 0%, transparent 60%)`,
+                  }}
+                />
+                
+                {/* Glitch lines */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  <div className="absolute top-1/4 left-0 right-0 h-px bg-terminal-purple/20" />
+                  <div className="absolute top-2/4 left-0 right-0 h-px bg-terminal-cyan/20" />
+                  <div className="absolute top-3/4 left-0 right-0 h-px bg-terminal-purple/20" />
+                </div>
+
+                {/* Question marks */}
+                <div className="relative z-10">
+                  <div className="font-pixel text-6xl md:text-8xl text-terminal-purple mb-6 animate-pulse">
+                    ?
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <p className="text-white/80 text-lg">
+                      How many evolutions until the final form?
+                    </p>
+                    <p className="text-white/60 text-base">
+                      What does the specimen become?
+                    </p>
+                    <p className="text-white/60 text-base">
+                      Only the market knows...
+                    </p>
+                  </div>
+
+                  <div className="mt-8 pt-8 border-t border-white/10">
+                    <p className="text-white/60 text-base italic max-w-lg mx-auto leading-relaxed">
+                      "The final transformation has never been documented. 
+                      Some believe it to be myth. Others have dedicated their existence 
+                      to witnessing it. The specimen waits... evolving... 
+                      until the moment arrives."
+                    </p>
+                    <div className="mt-4 text-white/40 text-sm">
+                      — Classified Lab Report
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="terminal-panel p-4 text-center">
-                <div className="font-pixel text-3xl text-terminal-cyan mb-2">2</div>
-                <div className="font-pixel text-xs text-terminal-cyan mb-1">LARVA</div>
-                <div className="text-terminal-muted text-xs">$10K</div>
-              </div>
-              <div className="terminal-panel p-4 text-center">
-                <div className="font-pixel text-3xl text-terminal-amber mb-2">3</div>
-                <div className="font-pixel text-xs text-terminal-amber mb-1">PUPA</div>
-                <div className="text-terminal-muted text-xs">$100K</div>
-              </div>
-              <div className="terminal-panel p-4 text-center">
-                <div className="font-pixel text-3xl text-terminal-red mb-2">4</div>
-                <div className="font-pixel text-xs text-terminal-red mb-1">JUVENILE</div>
-                <div className="text-terminal-muted text-xs">$500K</div>
-              </div>
-              <div className="terminal-panel p-4 text-center">
-                <div className="font-pixel text-3xl text-terminal-purple mb-2">5</div>
-                <div className="font-pixel text-xs text-terminal-purple mb-1">MATURE</div>
-                <div className="text-terminal-muted text-xs">$1M</div>
-              </div>
+            </div>
+
+            {/* Teaser text */}
+            <div className="mt-12 text-center">
+              <p className="text-white/60 text-base">
+                Feed the specimen. Watch it grow. Discover what lies beyond.
+              </p>
             </div>
           </div>
         </section>
 
         {/* CTA */}
-        <section className="border-t border-terminal-border/50">
+        <section className={`border-t border-white/10 bg-terminal-surface/30 transition-opacity duration-500 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
           <div className="max-w-7xl mx-auto px-6 py-20 text-center">
-            <h2 className="font-pixel text-2xl text-terminal-text mb-6">
+            <h2 className="font-pixel text-2xl text-white mb-6">
               READY TO <span className="text-terminal-green">OBSERVE</span>?
             </h2>
-            <p className="text-terminal-muted mb-8 max-w-lg mx-auto">
+            <p className="text-white/70 mb-8 max-w-lg mx-auto text-base leading-relaxed">
               Enter the laboratory and witness the evolution firsthand. 
               Join the community of observers tracking this experimental lifeform.
             </p>
             <Link 
               href="/observe"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-terminal-green text-terminal-bg font-pixel text-sm transition-all"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-terminal-green text-terminal-bg font-pixel text-sm transition-all hover:brightness-110"
               style={{ boxShadow: '0 0 20px rgba(255, 107, 53, 0.4)' }}
             >
               <TerminalIcon size={18} />
@@ -293,14 +411,14 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-terminal-border/50">
+      <footer className={`relative z-10 border-t border-white/10 bg-terminal-bg transition-opacity duration-500 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={20} />
-              <span className="font-pixel text-xs text-terminal-muted">CLAWVOLUTION</span>
+              <span className="font-pixel text-xs text-white/50">CLAWVOLUTION</span>
             </div>
-            <div className="text-terminal-dim text-xs">
+            <div className="text-white/40 text-sm">
               Observe. Evolve. Transcend.
             </div>
           </div>

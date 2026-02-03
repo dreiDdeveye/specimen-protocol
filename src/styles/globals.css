@@ -400,3 +400,32 @@ input[type="number"]::-webkit-outer-spin-button {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
 }
+/* PIXEL CURSORS */
+* {
+  cursor: url('/cursor-default.svg') 0 0, auto;
+}
+
+a,
+button,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+.cursor-pointer,
+select,
+label[for],
+[onclick] {
+  cursor: url('/cursor-pointer.svg') 6 0, pointer;
+}
+
+.cursor-crosshair {
+  cursor: url('/cursor-crosshair.svg') 12 12, crosshair;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+textarea {
+  cursor: text;
+}
