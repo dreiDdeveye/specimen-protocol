@@ -228,7 +228,7 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
             key={config.gif}
             src={config.gif}
             alt={`Specimen - ${stage.name}`}
-            className="w-[200px] h-[200px] object-contain"
+            className="w-[300px] h-[300px] object-contain"
             style={{ 
               mixBlendMode: 'multiply',
             }}
