@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
-  title: 'SPECIMEN PROTOCOL',
+  title: 'CLAWPROTOCOL',
   description: 'Observe the evolution. Witness the transformation.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/logo.png',
   },
 };
 

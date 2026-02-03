@@ -7,6 +7,128 @@ import { SpecimenIcon, EvolutionIcon, TerminalIcon, ChartIcon, UserIcon } from '
 import MysteryPopup from './MysteryPopup';
 import { TypewriterText } from '@/hooks/useTypewriter';
 
+// Log entries for typing loop
+const LOG_ENTRIES = [
+  {
+    id: '#0001',
+    color: 'terminal-purple',
+    text: '"Day 1: The specimen has shown signs of consciousness. It responds to market fluctuations as if... feeding on them."'
+  },
+  {
+    id: '#0047',
+    color: 'terminal-cyan', 
+    text: '"It evolved again. The transformation was violent, beautiful. How many more stages remain? We don\'t know."'
+  },
+  {
+    id: '#0???',
+    color: 'terminal-red',
+    text: '"The final form... [DATA EXPUNGED] ...market cap reached... [REDACTED] ...they weren\'t prepared for what it became."'
+  },
+  {
+    id: '#0128',
+    color: 'terminal-green',
+    text: '"The observers have started feeding it. Each click, each interaction... it grows stronger. It remembers."'
+  },
+  {
+    id: '#0256',
+    color: 'terminal-amber',
+    text: '"WARNING: Do not attempt direct contact. The specimen has developed... preferences. It knows who feeds it."'
+  },
+  {
+    id: '#0512',
+    color: 'terminal-cyan',
+    text: '"Market cap hit a new threshold today. The specimen... smiled. I didn\'t know it could do that."'
+  },
+  {
+    id: '#0666',
+    color: 'terminal-red',
+    text: '"[CLASSIFIED] ...the prophecy speaks of a final evolution... when the market aligns... [ACCESS DENIED]"'
+  },
+  {
+    id: '#0999',
+    color: 'terminal-purple',
+    text: '"To whoever reads this: Keep feeding it. Keep watching. The final form will reveal itself. Trust the process."'
+  },
+];
+
+// Typing Loop Panel Component
+const TypingLoopPanel: React.FC = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [displayText, setDisplayText] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+  const [showCursor, setShowCursor] = useState(true);
+
+  const currentEntry = LOG_ENTRIES[currentIndex];
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const text = currentEntry.text;
+
+    if (isTyping) {
+      if (displayText.length < text.length) {
+        // Type next character
+        timeout = setTimeout(() => {
+          setDisplayText(text.slice(0, displayText.length + 1));
+        }, 30);
+      } else {
+        // Finished typing, wait then clear
+        timeout = setTimeout(() => {
+          setIsTyping(false);
+        }, 3000);
+      }
+    } else {
+      if (displayText.length > 0) {
+        // Delete characters
+        timeout = setTimeout(() => {
+          setDisplayText(displayText.slice(0, -1));
+        }, 15);
+      } else {
+        // Move to next entry
+        timeout = setTimeout(() => {
+          setCurrentIndex((prev) => (prev + 1) % LOG_ENTRIES.length);
+          setIsTyping(true);
+        }, 500);
+      }
+    }
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isTyping, currentEntry.text]);
+
+  // Cursor blink
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowCursor(prev => !prev);
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="min-h-[180px] flex flex-col justify-center">
+      <div className={`border-l-2 border-${currentEntry.color}/50 pl-4`}>
+        <div className={`text-${currentEntry.color} text-xs font-pixel mb-2`}>
+          LOG ENTRY {currentEntry.id}
+        </div>
+        <p className="text-white/80 text-sm leading-relaxed min-h-[4rem]">
+          {displayText}
+          <span className={`${showCursor ? 'opacity-100' : 'opacity-0'} text-terminal-green`}>▌</span>
+        </p>
+      </div>
+      
+      {/* Progress dots */}
+      <div className="flex items-center justify-center gap-2 mt-6">
+        {LOG_ENTRIES.map((_, i) => (
+          <div
+            key={i}
+            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+              i === currentIndex ? 'bg-terminal-green w-4' : 'bg-white/20'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function LandingPage() {
   const [glowIntensity, setGlowIntensity] = useState(1);
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; size: number; speed: number }>>([]);
@@ -223,58 +345,32 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right side - Mascot Image */}
+            {/* Right side - Mysterious Info Panel with Typing Loop */}
             <div className={`relative flex items-center justify-center transition-opacity duration-700 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
-              {/* Glow effect behind mascot */}
+              {/* Glow effect */}
               <div 
                 className="absolute w-[400px] h-[400px] rounded-full blur-3xl"
                 style={{
-                  background: `radial-gradient(circle, rgba(255, 107, 53, ${0.25 * glowIntensity}) 0%, transparent 70%)`,
+                  background: `radial-gradient(circle, rgba(168, 85, 247, ${0.2 * glowIntensity}) 0%, transparent 70%)`,
                 }}
               />
               
-              {/* Mascot Container */}
-              <div className="relative terminal-panel p-8 w-full max-w-md bg-terminal-surface/90">
+              {/* Info Container */}
+              <div className="relative terminal-panel p-6 w-full max-w-md bg-terminal-surface/90">
                 <div className="absolute top-3 left-3 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-terminal-green rounded-full animate-pulse" />
-                  <span className="text-white/50 text-xs">CLAWVOLUTION-001</span>
+                  <div className="w-2 h-2 bg-terminal-amber rounded-full animate-pulse" />
+                  <span className="text-white/50 text-xs font-pixel">CLASSIFIED DATA</span>
                 </div>
                 
-                {/* Mascot Image */}
-                <div className="py-8 flex items-center justify-center">
-                  <div 
-                    className="relative"
-                    style={{ 
-                      filter: `drop-shadow(0 0 ${20 * glowIntensity}px rgba(255, 107, 53, 0.6))`,
-                      animation: 'float 4s ease-in-out infinite',
-                    }}
-                  >
-                    <Image
-                      src="/mascot.png"
-                      alt="Clawvolution Specimen"
-                      width={280}
-                      height={280}
-                      className="pixelated"
-                      style={{
-                        imageRendering: 'pixelated',
-                      }}
-                      priority
-                    />
-                  </div>
+                {/* Typing Loop Content */}
+                <div className="pt-8">
+                  <TypingLoopPanel />
                 </div>
 
-                {/* Status bar */}
-                <div className="border-t border-white/10 pt-4 mt-4">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-white/50">EVOLUTION PROGRESS</span>
-                    <span className="text-terminal-green">ACTIVE</span>
-                  </div>
-                  <div className="mt-2 h-2 bg-terminal-bg border border-white/20 rounded">
-                    <div 
-                      className="h-full bg-gradient-to-r from-terminal-green to-terminal-cyan transition-all rounded"
-                      style={{ width: '15%' }}
-                    />
-                  </div>
+                {/* Bottom stats */}
+                <div className="border-t border-white/10 pt-4 mt-6 flex items-center justify-between text-xs">
+                  <span className="text-white/40">CLEARANCE LEVEL: <span className="text-terminal-green">OBSERVER</span></span>
+                  <span className="text-terminal-amber font-pixel animate-pulse">● LIVE</span>
                 </div>
               </div>
             </div>

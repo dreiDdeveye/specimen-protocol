@@ -5,6 +5,10 @@ import { getRegulationSetting } from '@/db/regulation';
 // DexScreener API endpoint
 const DEXSCREENER_API = 'https://api.dexscreener.com/latest/dex/tokens';
 
+// Disable all caching for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET - Fetch market data for a token
 export async function GET(request: NextRequest) {
   try {
@@ -13,17 +17,16 @@ export async function GET(request: NextRequest) {
     if (!tokenAddress) {
       return NextResponse.json({
         success: false,
-        error: 'Token address is required. Use ?token=4T7XUugzhMtqxY8F7fmYaBGQyd6D7KdNJR7MvzVVpump',
+        error: 'Token address is required. Use ?token=h1F6sEQPLz9sJZLyCU3mCqXEHJzT3mouBbFHdq8pump',
       }, { status: 400 });
     }
 
-    // Fetch from DexScreener
+    // Fetch from DexScreener with cache disabled
     const response = await fetch(`${DEXSCREENER_API}/${tokenAddress}`, {
       headers: { 'Accept': 'application/json' },
-      next: { revalidate: 0 },
+      cache: 'no-store',
     });
 
-    
     if (!response.ok) {
       throw new Error(`DexScreener API error: ${response.status}`);
     }
@@ -46,6 +49,7 @@ export async function GET(request: NextRequest) {
 
     const marketCap = mainPair.marketCap || mainPair.fdv || 0;
 
+    // Return with no-cache headers
     return NextResponse.json({
       success: true,
       data: {
@@ -62,6 +66,11 @@ export async function GET(request: NextRequest) {
         chain: mainPair.chainId,
         url: mainPair.url,
         fetchedAt: new Date().toISOString(),
+      },
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
       },
     });
   } catch (error) {
@@ -82,7 +91,7 @@ export async function POST(request: NextRequest) {
     if (!tokenAddress) {
       return NextResponse.json({
         success: false,
-        error: 'Token address is required in body: { "token": "DyprcxbNBgA41JNsDc3Ku395vVXSQC9xWV75mUrMqThW" }',
+        error: 'Token address is required in body: { "token": "h1F6sEQPLz9sJZLyCU3mCqXEHJzT3mouBbFHdq8pump" }',
       }, { status: 400 });
     }
 
@@ -97,9 +106,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Fetch from DexScreener
+    // Fetch from DexScreener with cache disabled
     const response = await fetch(`${DEXSCREENER_API}/${tokenAddress}`, {
       headers: { 'Accept': 'application/json' },
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -154,6 +164,11 @@ export async function POST(request: NextRequest) {
         },
         progress: result.state.evolution_progress,
         fetchedAt: new Date().toISOString(),
+      },
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
       },
     });
   } catch (error) {

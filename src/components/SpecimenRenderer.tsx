@@ -19,13 +19,13 @@ interface FoodItem {
   landed: boolean;
 }
 
-// Map stage number to image path
-const stageConfig: Record<number, { image: string }> = {
-  1: { image: '/1st.png' },
-  2: { image: '/2nd.png' },
-  3: { image: '/3rd.png' },
-  4: { image: '/4th.png' },
-  5: { image: '/5th.png' },
+// Map stage number to GIF path
+const stageConfig: Record<number, { gif: string }> = {
+  1: { gif: '/1st.gif' },
+  2: { gif: '/2nd.gif' },
+  3: { gif: '/3rd.gif' },
+  4: { gif: '/4th.gif' },
+  5: { gif: '/5th.gif' },
 };
 
 export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
@@ -50,7 +50,7 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
       setFoodItems(prev => prev.map(food => {
         if (food.landed) return food;
         
-        const newTop = food.top + 8; // Fall speed
+        const newTop = food.top + 8;
         if (newTop >= food.targetTop) {
           return { ...food, top: food.targetTop, landed: true };
         }
@@ -67,13 +67,11 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
     
     const interval = setInterval(() => {
       setPosition(prev => {
-        // If there's food that has landed, chase it
         if (targetFood && targetFood.landed) {
           const dx = targetFood.x - prev.x;
           const dy = targetFood.y - prev.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
-          // Reached food
           if (distance < 25) {
             setIsEating(true);
             setTimeout(() => setIsEating(false), 300);
@@ -82,7 +80,6 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
             return prev;
           }
           
-          // Move towards food
           const newX = prev.x + (dx / distance) * speed * 2;
           const newY = prev.y + (dy / distance) * speed * 2;
           setFacingLeft(dx < 0);
@@ -90,7 +87,6 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
           return { x: newX, y: newY };
         }
         
-        // Normal roaming
         let newX = prev.x + velocity.x;
         let newY = prev.y + velocity.y;
         
@@ -121,7 +117,7 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
     return () => clearInterval(interval);
   }, [velocity, targetFood]);
 
-  // Find nearest landed food when food items change
+  // Find nearest landed food
   useEffect(() => {
     if (foodItems.length > 0 && !targetFood) {
       const landedFood = foodItems.filter(f => f.landed);
@@ -146,20 +142,16 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
     }
   }, [foodItems, targetFood, position]);
 
-  // Handle dropping food - falls from top
+  // Handle dropping food
   const handleFeed = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     
-    // X position where clicked
     const left = e.clientX - rect.left;
-    
-    // Start from top, fall to bottom area
     const startTop = 0;
-    const targetTop = rect.height - 80; // Land near bottom
+    const targetTop = rect.height - 80;
     
-    // Position relative to center (for specimen movement calculation)
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     const x = left - centerX;
@@ -183,10 +175,10 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full min-h-[400px] cursor-crosshair select-none overflow-hidden"
+      className="relative w-full h-full min-h-[400px] cursor-pointer select-none overflow-hidden"
       onClick={handleFeed}
     >
-      {/* Food items - falling animation */}
+      {/* Food items */}
       {foodItems.map(food => (
         <div
           key={food.id}
@@ -195,7 +187,6 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
             left: food.left,
             top: food.top,
             transform: 'translate(-50%, -50%)',
-            transition: food.landed ? 'none' : 'none',
           }}
         >
           <img 
@@ -209,19 +200,15 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
         </div>
       ))}
 
-      {/* Evolution flash effect */}
+      {/* Evolution flash */}
       {isEvolving && (
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full animate-ping"
-          style={{ 
-            width: 200,
-            height: 200,
-            animationDuration: '0.5s' 
-          }}
+          style={{ width: 200, height: 200, animationDuration: '0.5s' }}
         />
       )}
 
-      {/* Main specimen - positioned from center */}
+      {/* Specimen GIF */}
       <div
         className="absolute z-10 left-1/2 top-1/2"
         style={{
@@ -229,25 +216,22 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
           transition: isEating ? 'transform 0.15s ease-out' : 'transform 0.05s linear',
         }}
       >
-        {/* Eating effect */}
         {isEating && (
           <div 
             className="absolute inset-0 rounded-full animate-ping"
-            style={{
-              backgroundColor: 'rgba(0, 255, 100, 0.3)',
-              animationDuration: '0.3s',
-            }}
+            style={{ backgroundColor: 'rgba(0, 255, 100, 0.3)', animationDuration: '0.3s' }}
           />
         )}
         
-        {/* Image with flip effect */}
         <div style={{ transform: `scaleX(${facingLeft ? -1 : 1})` }}>
           <img
-            src={config.image}
+            key={config.gif}
+            src={config.gif}
             alt={`Specimen - ${stage.name}`}
-            width={200}
-            height={200}
-            style={{ imageRendering: 'pixelated' }}
+            className="w-[200px] h-[200px] object-contain"
+            style={{ 
+              mixBlendMode: 'multiply',
+            }}
           />
         </div>
       </div>
