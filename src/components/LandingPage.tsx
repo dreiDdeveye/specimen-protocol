@@ -345,7 +345,7 @@ export default function LandingPage() {
             <span className="font-pixel text-sm text-terminal-green tracking-wider">
               {startLandingTyping && (
                 <TypewriterText 
-                  text="CLAWVOLUTION" 
+                  text="CLAWPROTOCOL" 
                   speed={50} 
                   delay={0}
                   onComplete={() => setTypingStep(1)}
@@ -686,7 +686,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={20} />
-              <span className="font-pixel text-xs text-white/30">CLAWVOLUTION</span>
+              <span className="font-pixel text-xs text-white/30">CLAWPROTOCOL</span>
             </div>
             <div className="text-white/30 text-sm">
               Observe. Evolve. Transcend.
