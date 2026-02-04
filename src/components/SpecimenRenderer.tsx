@@ -19,13 +19,13 @@ interface FoodItem {
   landed: boolean;
 }
 
-// Map stage number to GIF path
-const stageConfig: Record<number, { gif: string }> = {
-  1: { gif: '/1st.gif' },
-  2: { gif: '/2nd.gif' },
-  3: { gif: '/3rd.gif' },
-  4: { gif: '/4th.gif' },
-  5: { gif: '/5th.gif' },
+// Map stage number to GIF path and size
+const stageConfig: Record<number, { gif: string; size: number }> = {
+  1: { gif: '/1st.gif', size: 120 },   // EMBRYO - smallest
+  2: { gif: '/2nd.gif', size: 300 },   // LARVA
+  3: { gif: '/3rd.gif', size: 300 },   // PUPA
+  4: { gif: '/4th.gif', size: 370 },   // JUVENILE
+  5: { gif: '/5th.gif', size: 600 },   // MATURE - largest
 };
 
 export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
@@ -41,8 +41,11 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
   const [isEating, setIsEating] = useState(false);
   const [targetFood, setTargetFood] = useState<FoodItem | null>(null);
 
-  const boundaryX = 300;
-  const boundaryY = 100;
+  const config = stageConfig[stage.stage] || stageConfig[1];
+  
+  // Adjust boundary based on specimen size (larger specimens have less room to roam)
+  const boundaryX = Math.max(150, 300 - config.size / 4);
+  const boundaryY = Math.max(50, 100 - config.size / 8);
 
   // Animate falling food
   useEffect(() => {
@@ -62,8 +65,11 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
   }, []);
 
   // Movement - either roaming or chasing food
+  // Larger specimens move slightly slower
   useEffect(() => {
-    const speed = 2;
+    const baseSpeed = 2;
+    const speedModifier = 1 - (config.size - 120) / 400; // Slower as size increases
+    const speed = baseSpeed * Math.max(0.5, speedModifier);
     
     const interval = setInterval(() => {
       setPosition(prev => {
@@ -72,7 +78,10 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
           const dy = targetFood.y - prev.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
-          if (distance < 25) {
+          // Larger hitbox for larger specimens
+          const eatDistance = 20 + config.size / 10;
+          
+          if (distance < eatDistance) {
             setIsEating(true);
             setTimeout(() => setIsEating(false), 300);
             setFoodItems(items => items.filter(f => f.id !== targetFood.id));
@@ -87,8 +96,8 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
           return { x: newX, y: newY };
         }
         
-        let newX = prev.x + velocity.x;
-        let newY = prev.y + velocity.y;
+        let newX = prev.x + velocity.x * speedModifier;
+        let newY = prev.y + velocity.y * speedModifier;
         
         let newVelX = velocity.x;
         let newVelY = velocity.y;
@@ -115,7 +124,7 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
     }, 30);
     
     return () => clearInterval(interval);
-  }, [velocity, targetFood]);
+  }, [velocity, targetFood, config.size, boundaryX, boundaryY]);
 
   // Find nearest landed food
   useEffect(() => {
@@ -170,8 +179,6 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
     setFoodItems(prev => [...prev, newFood]);
   }, []);
 
-  const config = stageConfig[stage.stage] || stageConfig[1];
-
   return (
     <div 
       ref={containerRef}
@@ -204,7 +211,7 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
       {isEvolving && (
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full animate-ping"
-          style={{ width: 200, height: 200, animationDuration: '0.5s' }}
+          style={{ width: config.size + 50, height: config.size + 50, animationDuration: '0.5s' }}
         />
       )}
 
@@ -216,21 +223,43 @@ export const SpecimenRenderer: React.FC<SpecimenRendererProps> = ({
           transition: isEating ? 'transform 0.15s ease-out' : 'transform 0.05s linear',
         }}
       >
+        {/* Eating effect - scales with specimen size */}
         {isEating && (
           <div 
             className="absolute inset-0 rounded-full animate-ping"
-            style={{ backgroundColor: 'rgba(0, 255, 100, 0.3)', animationDuration: '0.3s' }}
+            style={{ 
+              backgroundColor: 'rgba(0, 255, 100, 0.3)', 
+              animationDuration: '0.3s',
+              width: config.size,
+              height: config.size,
+            }}
           />
         )}
+        
+        {/* Glow effect - larger for bigger specimens */}
+        <div
+          className="absolute rounded-full blur-2xl pointer-events-none"
+          style={{
+            width: config.size * 1.5,
+            height: config.size * 1.5,
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: `radial-gradient(circle, rgba(0, 255, 65, 0.2) 0%, transparent 70%)`,
+          }}
+        />
         
         <div style={{ transform: `scaleX(${facingLeft ? -1 : 1})` }}>
           <img
             key={config.gif}
             src={config.gif}
             alt={`Specimen - ${stage.name}`}
-            className="w-[300px] h-[300px] object-contain"
             style={{ 
+              width: config.size,
+              height: config.size,
+              objectFit: 'contain',
               mixBlendMode: 'multiply',
+              transition: 'width 0.5s ease-out, height 0.5s ease-out',
             }}
           />
         </div>
