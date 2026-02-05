@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { SpecimenRenderer, EvolutionHUD, ChatConsole, UsernameModal } from '@/components';
+import { SpecimenRenderer, EvolutionHUD, ChatConsole, UsernameModal, LiveFeedLeaderboard } from '@/components';
 import DexChart from '@/components/DexChart';
 import LoadingScreen from '@/components/LoadingScreen';
+import { WalletProvider, useWallet } from '@/lib/WalletProvider';
 import { SpecimenIcon, TerminalIcon, AlertIcon } from '@/icons';
 import {
   generateFingerprint,
@@ -14,11 +15,74 @@ import {
 import type { SpecimenState, EvolutionStage, ChatMessage } from '@/types';
 
 // Token address for DexScreener
-const TOKEN_ADDRESS = 'h1F6sEQPLz9sJZLyCU3mCqXEHJzT3mouBbFHdq8pump';
+const TOKEN_ADDRESS = 'DoXzgix9D9PA5mRQzaN61E6v6Ur81MiPeJR9dVTpump';
 const CHAIN_ID = 'solana';
-const MARKET_CAP_POLL_INTERVAL = 30000;
+const MARKET_CAP_POLL_INTERVAL = 5000; // 5 seconds
 
-export default function ObservePage() {
+// Floating +1 Animation Component
+const FloatingPoints: React.FC<{ points: { id: number; x: number; y: number }[] }> = ({ points }) => {
+  return (
+    <>
+      {points.map((point) => (
+        <div
+          key={point.id}
+          className="absolute pointer-events-none font-pixel text-terminal-green text-2xl animate-float-up"
+          style={{ left: point.x, top: point.y }}
+        >
+          +1
+        </div>
+      ))}
+    </>
+  );
+};
+
+// Wallet Button Component
+const WalletButton: React.FC = () => {
+  const { connected, connecting, publicKey, connect, disconnect } = useWallet();
+
+  if (!connected) {
+    return (
+      <button
+        onClick={connect}
+        disabled={connecting}
+        className="flex items-center gap-2 px-4 py-2 bg-terminal-green/10 border border-terminal-green/50 text-terminal-green text-sm rounded-lg hover:bg-terminal-green/20 transition-all disabled:opacity-50"
+      >
+        {connecting ? (
+          <>
+            <div className="w-4 h-4 border-2 border-terminal-green/30 border-t-terminal-green rounded-full animate-spin" />
+            <span>Connecting...</span>
+          </>
+        ) : (
+          <>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 7V5C19 3.9 18.1 3 17 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H17C18.1 21 19 20.1 19 19V17" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M21 12H13C11.9 12 11 12.9 11 14C11 15.1 11.9 16 13 16H21V12Z" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Connect to Feed</span>
+          </>
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={disconnect}
+      className="flex items-center gap-2 px-3 py-2 bg-black/30 border border-terminal-green/30 text-white/60 text-xs rounded-lg hover:border-red-500/50 hover:text-red-400 transition-all"
+      title="Disconnect wallet"
+    >
+      <div className="w-2 h-2 rounded-full bg-terminal-green animate-pulse" />
+      <span className="font-mono">{publicKey?.slice(0, 4)}...{publicKey?.slice(-4)}</span>
+      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M18 6L6 18M6 6L18 18" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+};
+
+// Main Page Content Component
+const ObservePageContent: React.FC = () => {
+  const { connected, publicKey, connect } = useWallet();
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [observer, setObserver] = useState<StoredObserver | null>(null);
   const [fingerprint, setFingerprint] = useState<string | null>(null);
@@ -29,6 +93,10 @@ export default function ObservePage() {
   const [currentStage, setCurrentStage] = useState<EvolutionStage | null>(null);
   const [nextStage, setNextStage] = useState<EvolutionStage | null>(null);
   const [isEvolving, setIsEvolving] = useState(false);
+
+  // Floating points animation
+  const [floatingPoints, setFloatingPoints] = useState<{ id: number; x: number; y: number }[]>([]);
+  const pointIdRef = useRef(0);
 
   const prevStageRef = useRef<number | null>(null);
   const lastMarketCapRef = useRef<number | null>(null);
@@ -45,6 +113,7 @@ export default function ObservePage() {
     window.scrollTo(0, 0);
   }, []);
 
+  // Initialize observer
   useEffect(() => {
     const init = async () => {
       try {
@@ -75,35 +144,82 @@ export default function ObservePage() {
     init();
   }, []);
 
-  // Only update state if the data is newer/different
+  // Update wallet address when connected
+  useEffect(() => {
+    const updateWallet = async () => {
+      if (connected && publicKey && observer) {
+        try {
+          await fetch('/api/observers/wallet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              observerId: observer.id,
+              walletAddress: publicKey,
+            }),
+          });
+        } catch (err) {
+          console.error('Failed to save wallet:', err);
+        }
+      }
+    };
+    updateWallet();
+  }, [connected, publicKey, observer]);
+
+  // Handle tap on specimen to feed
+  const handleSpecimenTap = async (e: React.MouseEvent) => {
+    if (!connected) {
+      connect();
+      return;
+    }
+
+    if (!observer || !publicKey) return;
+
+    // Add floating +1 animation
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const newPoint = { id: pointIdRef.current++, x, y };
+    setFloatingPoints(prev => [...prev, newPoint]);
+    
+    // Remove after animation
+    setTimeout(() => {
+      setFloatingPoints(prev => prev.filter(p => p.id !== newPoint.id));
+    }, 1000);
+
+    // Record feed to database (fire and forget for instant feel)
+    fetch('/api/feeds', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        observerId: observer.id,
+        username: observer.username,
+        amount: 1,
+        walletAddress: publicKey,
+      }),
+    }).catch(err => {
+      console.error('Feed error:', err);
+    });
+  };
+
   const updateSpecimenData = useCallback((data: any) => {
     if (!data.success || !data.state || !data.stage) return;
 
     const newMarketCap = Number(data.state.market_cap);
     const newTimestamp = data._timestamp || Date.now();
 
-    // IMPORTANT: Only update if this data is newer than what we have
-    // and the market cap is different
     if (newTimestamp < lastUpdateTimeRef.current) {
-      console.log('[Specimen] Ignoring stale data');
       return;
     }
 
-    // Check if market cap actually changed
     if (lastMarketCapRef.current !== null && lastMarketCapRef.current === newMarketCap) {
-      // Same market cap, just update timestamp
       lastUpdateTimeRef.current = newTimestamp;
       return;
     }
 
-    // Log the update
-    console.log(`[Specimen] Updating: $${lastMarketCapRef.current?.toLocaleString() || 0} → $${newMarketCap.toLocaleString()}`);
-
-    // Update refs
     lastMarketCapRef.current = newMarketCap;
     lastUpdateTimeRef.current = newTimestamp;
 
-    // Check for evolution
     const currentStageNum = data.state.current_stage || 1;
     if (prevStageRef.current !== null && currentStageNum > prevStageRef.current) {
       setIsEvolving(true);
@@ -111,7 +227,6 @@ export default function ObservePage() {
     }
     prevStageRef.current = currentStageNum;
 
-    // Update state
     setSpecimenState(data.state);
     setCurrentStage(data.stage);
     setNextStage(data.nextStage || null);
@@ -122,10 +237,7 @@ export default function ObservePage() {
       const res = await fetch(`/api/specimen?_t=${Date.now()}`, {
         method: 'GET',
         cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-        },
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
       });
       const data = await res.json();
       updateSpecimenData(data);
@@ -136,21 +248,14 @@ export default function ObservePage() {
 
   const fetchMarketCap = useCallback(async () => {
     try {
-      console.log('[DexScreener] Fetching market cap...');
       const res = await fetch(`/api/dexscreener?_t=${Date.now()}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
         body: JSON.stringify({ token: TOKEN_ADDRESS }),
         cache: 'no-store',
       });
       const data = await res.json();
-
       if (data.success) {
-        console.log(`[DexScreener] Market cap: ${data.data?.formattedMarketCap}`);
-        // Wait a bit for DB to update, then fetch
         setTimeout(fetchSpecimenState, 500);
       }
     } catch (err) {
@@ -180,9 +285,9 @@ export default function ObservePage() {
     fetchMessages();
     fetchMarketCap();
 
-    const specimenInterval = setInterval(fetchSpecimenState, 10000);
-    const chatInterval = setInterval(fetchMessages, 3000);
-    const marketCapInterval = setInterval(fetchMarketCap, MARKET_CAP_POLL_INTERVAL);
+    const specimenInterval = setInterval(fetchSpecimenState, 3000); // 3 seconds
+    const chatInterval = setInterval(fetchMessages, 2000); // 2 seconds
+    const marketCapInterval = setInterval(fetchMarketCap, MARKET_CAP_POLL_INTERVAL); // 5 seconds
 
     return () => {
       clearInterval(specimenInterval);
@@ -273,23 +378,51 @@ export default function ObservePage() {
         </video>
         <div className="absolute inset-0 bg-black/20 z-0" />
 
-        <header className="relative z-10 border-b border-terminal-green/30 bg-black/50 backdrop-blur-sm p-4">
+        {/* Header */}
+        <header className="relative z-10 border-b border-terminal-green/30 bg-black/50 backdrop-blur-sm p-3">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={24} />
               <h1 className="font-pixel text-sm text-terminal-green tracking-wider">CLAWPROTOCOL</h1>
             </div>
+            
+            {/* Observer Name */}
             {observer && (
-              <div className="flex items-center gap-2 text-terminal-muted text-sm">
+              <div className="hidden sm:flex items-center gap-2 text-terminal-muted text-sm">
                 <TerminalIcon size={14} />
                 <span>Observer: </span>
                 <span className="text-terminal-cyan">{observer.username}</span>
               </div>
             )}
+            
+            {/* Wallet Button */}
+            <WalletButton />
           </div>
         </header>
 
-        <div className="flex-1 flex items-center justify-center relative z-10">
+        {/* Live Feed Leaderboard */}
+        <div className="absolute top-20 left-4 z-20 w-[280px]">
+          <div className="bg-black/70 backdrop-blur-sm rounded-lg border border-terminal-green/30 p-3">
+            <LiveFeedLeaderboard />
+          </div>
+        </div>
+
+        {/* Tap to Feed Hint */}
+        {connected && (
+          <div className="absolute top-20 right-4 z-20">
+            <div className="bg-black/70 backdrop-blur-sm rounded-lg border border-terminal-green/30 px-3 py-2">
+              <p className="text-terminal-green text-xs font-pixel animate-pulse">
+                👆 TAP SPECIMEN TO FEED
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Specimen - Clickable area */}
+        <div 
+          className="flex-1 flex items-center justify-center relative z-10 cursor-pointer"
+          onClick={handleSpecimenTap}
+        >
           {currentStage && specimenState && (
             <SpecimenRenderer
               stage={currentStage}
@@ -297,8 +430,22 @@ export default function ObservePage() {
               isEvolving={isEvolving}
             />
           )}
+          
+          {/* Floating +1 animations */}
+          <FloatingPoints points={floatingPoints} />
+          
+          {/* Connect wallet overlay if not connected */}
+          {!connected && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
+              <div className="text-center">
+                <p className="text-white/60 text-sm mb-2">Connect wallet to feed the specimen</p>
+                <p className="text-terminal-green/60 text-xs">Click anywhere to connect</p>
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce z-10">
           <span className="text-terminal-green/70 text-xs font-pixel">SCROLL</span>
           <svg className="w-6 h-6 text-terminal-green/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,6 +454,7 @@ export default function ObservePage() {
         </div>
       </section>
 
+      {/* Evolution HUD & Chat Section */}
       <section className="w-full bg-[#0a0f0a] py-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -330,13 +478,41 @@ export default function ObservePage() {
         </div>
       </section>
 
+      {/* DexChart Section */}
       <section className="w-full bg-[#0a0f0a] py-8 border-t border-terminal-border/30">
         <div className="max-w-7xl mx-auto px-4">
           <DexChart tokenAddress={TOKEN_ADDRESS} chainId={CHAIN_ID} />
         </div>
       </section>
 
+      {/* Username Modal */}
       <UsernameModal isOpen={showUsernameModal} onSubmit={handleUsernameSubmit} canClose={false} />
+
+      {/* Float up animation style */}
+      <style jsx global>{`
+        @keyframes float-up {
+          0% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-60px) scale(1.5);
+          }
+        }
+        .animate-float-up {
+          animation: float-up 1s ease-out forwards;
+        }
+      `}</style>
     </div>
+  );
+};
+
+// Main Page with Wallet Provider
+export default function ObservePage() {
+  return (
+    <WalletProvider>
+      <ObservePageContent />
+    </WalletProvider>
   );
 }

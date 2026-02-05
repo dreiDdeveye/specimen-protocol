@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { CoinIcon, EvolutionIcon, ChartIcon } from '@/icons';
 import { formatMarketCap, cn } from '@/lib/utils';
 import type { SpecimenState, EvolutionStage } from '@/types';
@@ -48,17 +48,33 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
   nextStage,
 }) => {
   const progress = Math.min(100, Math.max(0, state.evolution_progress));
-  const [displayedProgress, setDisplayedProgress] = useState(0);
   const [glowPulse, setGlowPulse] = useState(1);
   const [currentMessage, setCurrentMessage] = useState(SPECIMEN_MESSAGES[0]);
   const [isTyping, setIsTyping] = useState(false);
+  
+  // Track previous values for flash animation
+  const prevMarketCap = useRef(Number(state.market_cap));
+  const prevProgress = useRef(progress);
+  const [marketCapFlash, setMarketCapFlash] = useState(false);
+  const [progressFlash, setProgressFlash] = useState(false);
 
-  // Animate progress bar
+  // Flash on market cap change
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDisplayedProgress(progress);
-    }, 100);
-    return () => clearTimeout(timer);
+    const newMarketCap = Number(state.market_cap);
+    if (newMarketCap !== prevMarketCap.current) {
+      setMarketCapFlash(true);
+      setTimeout(() => setMarketCapFlash(false), 300);
+      prevMarketCap.current = newMarketCap;
+    }
+  }, [state.market_cap]);
+
+  // Flash on progress change
+  useEffect(() => {
+    if (progress !== prevProgress.current) {
+      setProgressFlash(true);
+      setTimeout(() => setProgressFlash(false), 300);
+      prevProgress.current = progress;
+    }
   }, [progress]);
 
   // Glow pulse animation
@@ -114,14 +130,22 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4 mb-4">
-        {/* Market Cap */}
-        <div className="bg-terminal-bg/50 p-3 border border-terminal-border rounded relative overflow-hidden group hover:border-terminal-amber/50 transition-colors">
+        {/* Market Cap - Real-time */}
+        <div className={cn(
+          "bg-terminal-bg/50 p-3 border rounded relative overflow-hidden group transition-all duration-150",
+          marketCapFlash 
+            ? "border-terminal-amber bg-terminal-amber/10" 
+            : "border-terminal-border hover:border-terminal-amber/50"
+        )}>
           <div className="flex items-center gap-2 mb-1 relative">
             <CoinIcon className="text-terminal-amber" size={12} />
             <span className="text-terminal-muted text-xs uppercase">Market Cap</span>
           </div>
           <div 
-            className="font-pixel text-xl text-terminal-amber relative"
+            className={cn(
+              "font-pixel text-xl text-terminal-amber relative transition-transform duration-150",
+              marketCapFlash && "scale-110"
+            )}
             style={{ 
               textShadow: `0 0 ${10 * glowPulse}px rgba(255, 170, 0, 0.5)`,
             }}
@@ -241,7 +265,7 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
         </div>
       </div>
 
-      {/* Evolution Progress */}
+      {/* Evolution Progress - Real-time, No Delay */}
       <div className="mt-auto">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -249,15 +273,21 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
             <span className="text-terminal-muted text-xs uppercase">Progress to Next Stage</span>
           </div>
           <span 
-            className="font-pixel text-sm text-terminal-green"
+            className={cn(
+              "font-pixel text-sm text-terminal-green transition-transform duration-150",
+              progressFlash && "scale-125 text-terminal-cyan"
+            )}
             style={{ textShadow: `0 0 ${8 * glowPulse}px rgba(0, 255, 65, 0.5)` }}
           >
             {progress.toFixed(1)}%
           </span>
         </div>
 
-        {/* Enhanced Progress Bar */}
-        <div className="relative h-4 bg-terminal-bg border border-terminal-border rounded overflow-hidden">
+        {/* Progress Bar - Instant Update */}
+        <div className={cn(
+          "relative h-4 bg-terminal-bg border rounded overflow-hidden transition-all duration-150",
+          progressFlash ? "border-terminal-green" : "border-terminal-border"
+        )}>
           <div className="absolute inset-0 opacity-20">
             {Array.from({ length: 20 }).map((_, i) => (
               <div 
@@ -268,9 +298,10 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
             ))}
           </div>
           
+          {/* Progress fill - NO transition delay for instant update */}
           <div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-terminal-green via-terminal-cyan to-terminal-green transition-all duration-700 ease-out"
-            style={{ width: `${displayedProgress}%` }}
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-terminal-green via-terminal-cyan to-terminal-green"
+            style={{ width: `${progress}%` }}
           >
             <div 
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
@@ -278,23 +309,30 @@ export const EvolutionHUD: React.FC<EvolutionHUDProps> = ({
             />
           </div>
           
-          {displayedProgress > 0 && displayedProgress < 100 && (
+          {/* Glow at progress edge */}
+          {progress > 0 && progress < 100 && (
             <div 
               className="absolute top-0 bottom-0 w-2 bg-terminal-green blur-sm"
-              style={{ left: `${displayedProgress}%`, opacity: glowPulse }}
+              style={{ left: `${progress}%`, opacity: glowPulse }}
             />
           )}
         </div>
 
-        {/* Next Stage Info - Show market cap but hide name */}
+        {/* Next Stage Info - Mystery indicator */}
         {nextStage ? (
           <div className="mt-3 flex items-center justify-between text-xs p-2 bg-terminal-bg/30 rounded border border-terminal-border/30">
-            <span className="text-terminal-muted flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-terminal-cyan animate-pulse" />
-              Next: <span className="text-terminal-cyan font-pixel">???</span>
+            <span className="text-terminal-cyan font-pixel flex items-center gap-2">
+              <svg className="w-3 h-3 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 3L4 14h7v7l9-11h-7V3z" />
+              </svg>
+              SOMETHING IS COMING...
             </span>
-            <span className="text-terminal-amber font-pixel">
-              @ {formatMarketCap(Number(nextStage.market_cap_required))}
+            <span className="text-terminal-green font-pixel flex items-center gap-2">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 17l6-6 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M17 7h4v4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              KEEP PUMPING
             </span>
           </div>
         ) : (

@@ -345,7 +345,7 @@ export default function LandingPage() {
             <span className="font-pixel text-sm text-terminal-green tracking-wider">
               {startLandingTyping && (
                 <TypewriterText 
-                  text="CLAWPROTOCOL" 
+                  text="CLAWVOLUTION" 
                   speed={50} 
                   delay={0}
                   onComplete={() => setTypingStep(1)}
@@ -599,55 +599,110 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* The Mystery Section */}
+        {/* The Genesis Section */}
         <section className={`border-t border-white/5 transition-opacity duration-500 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
           <div className="max-w-7xl mx-auto px-6 py-24">
             <div className="text-center mb-16">
-              <span className="text-terminal-purple text-xs font-pixel tracking-widest mb-4 block">CLASSIFIED</span>
-              <h2 className="font-pixel text-3xl lg:text-4xl text-white mb-4">THE <span className="text-terminal-purple">FINAL FORM</span></h2>
+              <span className="text-terminal-amber text-xs font-pixel tracking-widest mb-4 block">ORIGIN STORY</span>
+              <h2 className="font-pixel text-3xl lg:text-4xl text-white mb-4">THE <span className="text-terminal-amber">GENESIS</span></h2>
               <p className="text-white/50 max-w-xl mx-auto text-lg">
-                What happens when the specimen reaches its ultimate evolution?
+                It started with a prompt. It ended with lobsters taking over.
               </p>
             </div>
 
-            {/* Mystery Container */}
-            <div className="max-w-3xl mx-auto">
-              <div className="terminal-panel p-10 md:p-16 text-center relative overflow-hidden bg-gradient-to-br from-terminal-surface/80 to-terminal-bg/80">
+            {/* Genesis Timeline Container */}
+            <div className="max-w-4xl mx-auto">
+              <div className="terminal-panel p-8 md:p-12 relative overflow-hidden bg-gradient-to-br from-terminal-surface/80 to-terminal-bg/80">
                 {/* Animated background */}
                 <div 
-                  className="absolute inset-0 opacity-30"
+                  className="absolute inset-0 opacity-20"
                   style={{
-                    background: `radial-gradient(circle at center, rgba(168, 85, 247, ${0.2 * glowIntensity}) 0%, transparent 60%)`,
+                    background: `radial-gradient(circle at center, rgba(255, 170, 0, ${0.2 * glowIntensity}) 0%, transparent 60%)`,
                   }}
                 />
                 
-                {/* Glitch lines */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  <div className="absolute top-1/4 left-0 right-0 h-px bg-terminal-purple/20" />
-                  <div className="absolute top-1/2 left-0 right-0 h-px bg-terminal-cyan/20" />
-                  <div className="absolute top-3/4 left-0 right-0 h-px bg-terminal-purple/20" />
+                {/* Vertical timeline line */}
+                <div className="absolute left-8 md:left-12 top-24 bottom-24 w-px bg-gradient-to-b from-terminal-green via-terminal-cyan to-terminal-amber" />
+
+                {/* Timeline Content */}
+                <div className="relative z-10 space-y-8 pl-12 md:pl-16">
+                  {/* Day 0 */}
+                  <div className="relative group">
+                    <div className="absolute -left-12 md:-left-16 w-6 h-6 rounded-full bg-terminal-green/20 border-2 border-terminal-green flex items-center justify-center group-hover:scale-125 transition-transform">
+                      <div className="w-2 h-2 rounded-full bg-terminal-green" />
+                    </div>
+                    <div className="font-pixel text-terminal-green text-sm mb-2">DAY 0 — THE PROMPT</div>
+                    <p className="text-white/70 text-base leading-relaxed">
+                      "A single prompt was entered into <span className="text-terminal-cyan font-semibold">OpenClaw</span>... 
+                      <span className="text-white/40 italic"> 'Create something that evolves.'</span>"
+                    </p>
+                  </div>
+
+                  {/* Day 1 */}
+                  <div className="relative group">
+                    <div className="absolute -left-12 md:-left-16 w-6 h-6 rounded-full bg-terminal-cyan/20 border-2 border-terminal-cyan flex items-center justify-center group-hover:scale-125 transition-transform">
+                      <div className="w-2 h-2 rounded-full bg-terminal-cyan" />
+                    </div>
+                    <div className="font-pixel text-terminal-cyan text-sm mb-2">DAY 1 — FIRST CODE</div>
+                    <p className="text-white/70 text-base leading-relaxed">
+                      "The first lines of code wrote themselves. No human hands touched the keyboard.
+                      <span className="text-white/40 italic"> The AI had begun its work.</span>"
+                    </p>
+                  </div>
+
+                  {/* Day 7 */}
+                  <div className="relative group">
+                    <div className="absolute -left-12 md:-left-16 w-6 h-6 rounded-full bg-terminal-purple/20 border-2 border-terminal-purple flex items-center justify-center group-hover:scale-125 transition-transform">
+                      <div className="w-2 h-2 rounded-full bg-terminal-purple" />
+                    </div>
+                    <div className="font-pixel text-terminal-purple text-sm mb-2">DAY 7 — EVOLUTION BEGINS</div>
+                    <p className="text-white/70 text-base leading-relaxed">
+                      "It began to evolve on its own. We stopped asking questions.
+                      <span className="text-white/40 italic"> We started watching.</span>"
+                    </p>
+                  </div>
+
+                  {/* Day ??? */}
+                  <div className="relative group">
+                    <div className="absolute -left-12 md:-left-16 w-6 h-6 rounded-full bg-terminal-amber/20 border-2 border-terminal-amber flex items-center justify-center group-hover:scale-125 transition-transform animate-pulse">
+                      <div className="w-2 h-2 rounded-full bg-terminal-amber" />
+                    </div>
+                    <div className="font-pixel text-terminal-amber text-sm mb-2">DAY ??? — THE TAKEOVER</div>
+                    <p className="text-white/70 text-base leading-relaxed">
+                      "The lobsters... <span className="text-terminal-red">they're everywhere now.</span>
+                      <span className="text-white/40 italic"> Built entirely by AI. Owned by 🦞</span>"
+                    </p>
+                  </div>
                 </div>
 
-                {/* Question mark */}
-                <div className="relative z-10">
-                  <div className="font-pixel text-7xl md:text-9xl text-terminal-purple mb-8">
-                    <GlitchText text="?" />
+                {/* Bottom Stats */}
+                <div className="relative z-10 mt-12 pt-8 border-t border-white/10">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="font-pixel text-2xl text-terminal-green mb-1">&lt;0.01%</div>
+                      <div className="text-white/40 text-xs">Human Intervention</div>
+                    </div>
+                    <div>
+                      <div className="font-pixel text-2xl text-terminal-cyan mb-1">100%</div>
+                      <div className="text-white/40 text-xs">AI Generated</div>
+                    </div>
+                    <div>
+                      <div className="font-pixel text-2xl text-terminal-amber mb-1">∞</div>
+                      <div className="text-white/40 text-xs">Evolution Potential</div>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-3 mb-10">
-                    <p className="text-white/80 text-xl">How many evolutions until the final form?</p>
-                    <p className="text-white/50 text-lg">What does the specimen become?</p>
-                    <p className="text-white/40 text-lg">Only the market knows...</p>
-                  </div>
+                </div>
 
-                  <div className="pt-8 border-t border-white/10">
-                    <p className="text-white/50 text-base italic max-w-lg mx-auto leading-relaxed">
-                      "The final transformation has never been documented. 
-                      Some believe it to be myth. Others have dedicated their existence 
-                      to witnessing it. The specimen waits... evolving..."
+                {/* Manifesto Quote */}
+                <div className="relative z-10 mt-8 p-6 bg-terminal-bg/50 rounded-lg border border-white/5">
+                  <div className="text-center">
+                    <div className="text-4xl mb-4">🦞</div>
+                    <p className="text-white/60 text-sm italic leading-relaxed max-w-lg mx-auto">
+                      "No devs. No VCs. No roadmap. Just a prompt, an AI, and the unstoppable 
+                      rise of the claw. The market decides our form. The code writes itself."
                     </p>
-                    <div className="mt-4 text-terminal-purple/60 text-sm font-pixel">
-                      — Classified Lab Report
+                    <div className="mt-4 text-terminal-amber/60 text-xs font-pixel">
+                      — The Clawvolution Manifesto
                     </div>
                   </div>
                 </div>
@@ -686,7 +741,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={20} />
-              <span className="font-pixel text-xs text-white/30">CLAWPROTOCOL</span>
+              <span className="font-pixel text-xs text-white/30">CLAWVOLUTION</span>
             </div>
             <div className="text-white/30 text-sm">
               Observe. Evolve. Transcend.
