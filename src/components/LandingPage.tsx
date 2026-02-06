@@ -385,7 +385,7 @@ export default function LandingPage() {
             <span className="font-pixel text-sm text-terminal-green tracking-wider">
               {startLandingTyping && (
                 <TypewriterText 
-                  text="CLAWVOLUTION" 
+                  text="CLAWVPROTOCOL" 
                   speed={50} 
                   delay={0}
                   onComplete={() => setTypingStep(1)}
