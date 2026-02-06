@@ -374,7 +374,7 @@ export default function LandingPage() {
             <div className="relative">
               <Image 
                 src="/logo.png" 
-                alt="Clawvolution" 
+                alt="Clawprotocol" 
                 width={36} 
                 height={36}
                 className="pixelated transition-transform group-hover:scale-110"
@@ -737,7 +737,7 @@ export default function LandingPage() {
                       rise of the claw. The market decides our form. The code writes itself."
                     </p>
                     <div className="mt-4 text-terminal-amber/60 text-xs font-pixel">
-                      — The Clawvolution Manifesto
+                      — The CLAWPROTOCOL Manifesto
                     </div>
                   </div>
                 </div>
@@ -776,7 +776,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={20} />
-              <span className="font-pixel text-xs text-white/30">CLAWVOLUTION</span>
+              <span className="font-pixel text-xs text-white/30">CLAWPROTOCOL</span>
             </div>
             <div className="text-white/30 text-sm">
               Observe. Evolve. Transcend.
