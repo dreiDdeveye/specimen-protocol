@@ -385,7 +385,7 @@ export default function LandingPage() {
             <span className="font-pixel text-sm text-terminal-green tracking-wider">
               {startLandingTyping && (
                 <TypewriterText 
-                  text="CLAWPROTOCOL" 
+                  text="CLAWVOLUTION" 
                   speed={50} 
                   delay={0}
                   onComplete={() => setTypingStep(1)}
@@ -394,28 +394,30 @@ export default function LandingPage() {
               )}
             </span>
           </Link>
-          <nav className={`flex items-center gap-6 transition-all duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
+          <nav className={`flex items-center gap-4 transition-all duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
             <a 
-              href="https://x.com/i/communities/2019914054790525221/?fbclid=IwY2xjawPzVo9leHRuA2FlbQIxMABicmlkETFWREI1dkM3NmdDVno0V1NIc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHqP2SdBh7J3Ez3m6X8JXGNQSUJAlYafHvUbMh5vD7n_nJzbg1kn6L0FCvWuQ_aem_y7BheTKw0KOMj3BNBXiJfw" 
+              href="https://x.com/i/communities/2019914054790525221/?fbclid=IwY2xjawPzWbNleHRuA2FlbQIxMABicmlkETFWREI1dkM3NmdDVno0V1NIc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHufLjHGx8myH4lmUaNRhQ4VaERlARhSUNd21PYCLIAtk0bXYn-1i4l8RN9_8_aem_S8Izs6H3wVUo5VlJW6mMKw" 
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/50 hover:text-terminal-green transition-all hover:scale-110"
-              aria-label="X (Twitter)"
+              className="flex items-center gap-1.5 text-white/50 hover:text-terminal-green transition-all text-xs"
+              aria-label="Community"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
               </svg>
+              <span className="hidden sm:inline">Community</span>
             </a>
-                        <a 
-              href="" 
+            <a 
+              href="https://x.com/ClawProtocol?fbclid=IwY2xjawPzWZ9leHRuA2FlbQIxMABicmlkETFWREI1dkM3NmdDVno0V1NIc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHiKqVPlyIYcj49CAQ6QA1driNlbukRIefJismqeM9fb1P_d79uuBbH3CgMqi_aem_ZlncnzbhRS9npYfVqY9LZA" 
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/50 hover:text-terminal-green transition-all hover:scale-110"
-              aria-label="X (Twitter)"
+              className="flex items-center gap-1.5 text-white/50 hover:text-terminal-green transition-all text-xs"
+              aria-label="Main"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
               </svg>
+              <span className="hidden sm:inline">Main</span>
             </a>
             <Link 
               href="/observe" 
@@ -735,7 +737,7 @@ export default function LandingPage() {
                       rise of the claw. The market decides our form. The code writes itself."
                     </p>
                     <div className="mt-4 text-terminal-amber/60 text-xs font-pixel">
-                      — The `ClawProtocol` Manifesto
+                      — The Clawvolution Manifesto
                     </div>
                   </div>
                 </div>
@@ -774,7 +776,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={20} />
-              <span className="font-pixel text-xs text-white/30">CLAWPROTOCOL</span>
+              <span className="font-pixel text-xs text-white/30">CLAWVOLUTION</span>
             </div>
             <div className="text-white/30 text-sm">
               Observe. Evolve. Transcend.
