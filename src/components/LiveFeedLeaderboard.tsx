@@ -293,7 +293,7 @@ export const LiveFeedLeaderboard: React.FC = () => {
       <div className="mt-3 flex items-center justify-between text-[10px] text-white/30">
         <div className="flex items-center gap-1">
           <TrophyIcon className="text-white/30" size={10} />
-          <span>Total Fed: {formatNumber(stats.totalFed)} $CLAWS</span>
+          <span>Total Fed: {formatNumber(stats.totalFed)} $CLAW</span>
         </div>
         <div className="flex items-center gap-1">
           <span className="w-1.5 h-1.5 bg-terminal-green rounded-full animate-pulse" />
