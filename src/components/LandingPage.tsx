@@ -223,7 +223,7 @@ const GlitchText: React.FC<{ text: string; className?: string }> = ({ text, clas
 // CA Section Component
 const CASection: React.FC<{ show: boolean }> = ({ show }) => {
   const [copied, setCopied] = useState(false);
-  const CA_ADDRESS = ''; // Replace with actual CA
+  const CA_ADDRESS = 'CEgjYKuCukgg6DCQrn7882PcCh62Z8JU5gKzz1mrpump'; // Replace with actual CA
 
   const handleCopy = async () => {
     try {
@@ -374,7 +374,7 @@ export default function LandingPage() {
             <div className="relative">
               <Image 
                 src="/logo.png" 
-                alt="Clawprotocol" 
+                alt="Clawvolution" 
                 width={36} 
                 height={36}
                 className="pixelated transition-transform group-hover:scale-110"
@@ -385,7 +385,7 @@ export default function LandingPage() {
             <span className="font-pixel text-sm text-terminal-green tracking-wider">
               {startLandingTyping && (
                 <TypewriterText 
-                  text="CLAWVPROTOCOL" 
+                  text="CLAWPROTOCOL" 
                   speed={50} 
                   delay={0}
                   onComplete={() => setTypingStep(1)}
@@ -396,7 +396,7 @@ export default function LandingPage() {
           </Link>
           <nav className={`flex items-center gap-4 transition-all duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
             <a 
-              href="https://x.com/i/communities/2019914054790525221/?fbclid=IwY2xjawPzWbNleHRuA2FlbQIxMABicmlkETFWREI1dkM3NmdDVno0V1NIc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHufLjHGx8myH4lmUaNRhQ4VaERlARhSUNd21PYCLIAtk0bXYn-1i4l8RN9_8_aem_S8Izs6H3wVUo5VlJW6mMKw" 
+              href="https://x.com/i/communities/2019914054790525221" 
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-white/50 hover:text-terminal-green transition-all text-xs"
@@ -408,7 +408,7 @@ export default function LandingPage() {
               <span className="hidden sm:inline">Community</span>
             </a>
             <a 
-              href="https://x.com/ClawProtocol?fbclid=IwY2xjawPzWZ9leHRuA2FlbQIxMABicmlkETFWREI1dkM3NmdDVno0V1NIc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHiKqVPlyIYcj49CAQ6QA1driNlbukRIefJismqeM9fb1P_d79uuBbH3CgMqi_aem_ZlncnzbhRS9npYfVqY9LZA" 
+              href="https://x.com/ClawProtocol" 
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-white/50 hover:text-terminal-green transition-all text-xs"
@@ -737,7 +737,7 @@ export default function LandingPage() {
                       rise of the claw. The market decides our form. The code writes itself."
                     </p>
                     <div className="mt-4 text-terminal-amber/60 text-xs font-pixel">
-                      — The CLAWPROTOCOL Manifesto
+                      — The Clawvolution Manifesto
                     </div>
                   </div>
                 </div>
@@ -776,7 +776,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={20} />
-              <span className="font-pixel text-xs text-white/30">CLAWPROTOCOL</span>
+              <span className="font-pixel text-xs text-white/30">CLAWVOLUTION</span>
             </div>
             <div className="text-white/30 text-sm">
               Observe. Evolve. Transcend.
