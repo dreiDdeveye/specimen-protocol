@@ -223,7 +223,7 @@ const GlitchText: React.FC<{ text: string; className?: string }> = ({ text, clas
 // CA Section Component
 const CASection: React.FC<{ show: boolean }> = ({ show }) => {
   const [copied, setCopied] = useState(false);
-  const CA_ADDRESS = 'CEgjYKuCukgg6DCQrn7882PcCh62Z8JU5gKzz1mrpump'; // Replace with actual CA
+  const CA_ADDRESS = ''; // Replace with actual CA
 
   const handleCopy = async () => {
     try {
@@ -737,7 +737,7 @@ export default function LandingPage() {
                       rise of the claw. The market decides our form. The code writes itself."
                     </p>
                     <div className="mt-4 text-terminal-amber/60 text-xs font-pixel">
-                      — The Clawvolution Manifesto
+                      — The CLAWPROTOCOL Manifesto
                     </div>
                   </div>
                 </div>
@@ -776,7 +776,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={20} />
-              <span className="font-pixel text-xs text-white/30">CLAWVOLUTION</span>
+              <span className="font-pixel text-xs text-white/30">CLAWPROTOCOL</span>
             </div>
             <div className="text-white/30 text-sm">
               Observe. Evolve. Transcend.
