@@ -69,7 +69,6 @@ const LiveChatPreview: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         const newMessages = data.messages?.slice(-6) || [];
-        // Check for new message
         if (prevMessagesRef.current.length > 0 && newMessages.length > 0) {
           const lastOld = prevMessagesRef.current[prevMessagesRef.current.length - 1]?.id;
           const lastNew = newMessages[newMessages.length - 1]?.id;
@@ -102,7 +101,6 @@ const LiveChatPreview: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Online indicator */}
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/5">
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1">
@@ -123,9 +121,7 @@ const LiveChatPreview: React.FC = () => {
         </div>
       </div>
 
-      {/* Messages area */}
       <div className="flex-1 overflow-hidden space-y-2 min-h-[180px] max-h-[220px] relative">
-        {/* Fade overlay at top */}
         <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-terminal-surface/90 to-transparent z-10 pointer-events-none" />
         
         {messages.length === 0 ? (
@@ -173,7 +169,6 @@ const LiveChatPreview: React.FC = () => {
         )}
       </div>
 
-      {/* Locked input area */}
       <div className="border-t border-white/10 pt-4 mt-3">
         <div className="relative group">
           <div className="w-full bg-terminal-bg/80 border border-terminal-border/30 rounded-lg px-4 py-3 text-sm text-white/30 flex items-center justify-between group-hover:border-terminal-green/30 transition-colors">
@@ -225,6 +220,55 @@ const GlitchText: React.FC<{ text: string; className?: string }> = ({ text, clas
   );
 };
 
+// CA Section Component
+const CASection: React.FC<{ show: boolean }> = ({ show }) => {
+  const [copied, setCopied] = useState(false);
+  const CA_ADDRESS = 'CEgjYKuCukgg6DCQrn7882PcCh62Z8JU5gKzz1mrpump'; // Replace with actual CA
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(CA_ADDRESS);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  return (
+    <div className={`max-w-4xl mx-auto px-6 mb-10 transition-all duration-500 ${show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div 
+        className="group relative bg-terminal-bg/80 backdrop-blur-md border border-terminal-green/30 rounded-xl p-4 cursor-pointer hover:border-terminal-green/60 hover:bg-terminal-green/5 transition-all"
+        onClick={handleCopy}
+      >
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          <span className="text-white/50 text-sm font-pixel">CA:</span>
+          <code className="text-terminal-green text-sm sm:text-lg font-mono tracking-wider group-hover:text-terminal-cyan transition-colors break-all">
+            {CA_ADDRESS}
+          </code>
+          <div className="flex items-center gap-2 transition-colors">
+            {copied ? (
+              <>
+                <svg className="w-5 h-5 text-terminal-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-terminal-green text-xs font-pixel">COPIED!</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5 text-white/30 group-hover:text-terminal-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span className="text-white/30 group-hover:text-terminal-green text-xs hidden sm:inline transition-colors">CLICK TO COPY</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function LandingPage() {
   const [glowIntensity, setGlowIntensity] = useState(1);
   const [showPopup, setShowPopup] = useState(true);
@@ -234,7 +278,6 @@ export default function LandingPage() {
 
   const startLandingTyping = !showPopup;
 
-  // Track mouse position for parallax
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
@@ -243,14 +286,12 @@ export default function LandingPage() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Track scroll
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Glow animation
   useEffect(() => {
     const interval = setInterval(() => {
       setGlowIntensity(0.7 + Math.sin(Date.now() / 1000) * 0.3);
@@ -260,7 +301,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#0a0a0a]">
-      {/* Mystery Popup */}
       {showPopup && <MysteryPopup onClose={() => setShowPopup(false)} />}
 
       {/* Animated Grid Background */}
@@ -291,7 +331,7 @@ export default function LandingPage() {
         ))}
       </div>
 
-      {/* Gradient Orbs with Parallax */}
+      {/* Gradient Orbs */}
       <div className="fixed inset-0 pointer-events-none">
         <div 
           className="absolute w-[800px] h-[800px] rounded-full blur-[100px] opacity-30"
@@ -345,7 +385,7 @@ export default function LandingPage() {
             <span className="font-pixel text-sm text-terminal-green tracking-wider">
               {startLandingTyping && (
                 <TypewriterText 
-                  text="CLAWVOLUTION" 
+                  text="CLAWPROTOCOL" 
                   speed={50} 
                   delay={0}
                   onComplete={() => setTypingStep(1)}
@@ -356,7 +396,7 @@ export default function LandingPage() {
           </Link>
           <nav className={`flex items-center gap-6 transition-all duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
             <a 
-              href="https://x.com/clawvolution" 
+              href="https://x.com/ClawProtocol" 
               target="_blank"
               rel="noopener noreferrer"
               className="text-white/50 hover:text-terminal-green transition-all hover:scale-110"
@@ -388,7 +428,6 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-16 items-center w-full">
             {/* Left side - Text */}
             <div className={`transition-all duration-700 ${startLandingTyping ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
-              {/* Badge */}
               <div className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-terminal-green/10 to-terminal-cyan/10 border border-terminal-green/30 rounded-full mb-8 transition-opacity duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="relative">
                   <div className="w-2 h-2 bg-terminal-green rounded-full" />
@@ -407,7 +446,6 @@ export default function LandingPage() {
                 </span>
               </div>
               
-              {/* Main Heading */}
               <h1 className="text-5xl lg:text-7xl font-pixel leading-[1.1] mb-8">
                 <span className="text-terminal-green block min-h-[1.15em] drop-shadow-[0_0_30px_rgba(0,255,65,0.3)]">
                   {typingStep >= 2 && (
@@ -444,7 +482,6 @@ export default function LandingPage() {
                 </span>
               </h1>
               
-              {/* Description */}
               <p className="text-white/60 text-lg mb-10 max-w-xl leading-relaxed min-h-[5rem]">
                 {typingStep >= 5 && (
                   <TypewriterText 
@@ -457,7 +494,6 @@ export default function LandingPage() {
                 )}
               </p>
 
-              {/* CTA Buttons */}
               <div className={`flex flex-wrap gap-4 transition-all duration-500 ${typingStep >= 6 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <Link 
                   href="/observe"
@@ -479,7 +515,6 @@ export default function LandingPage() {
                 </a>
               </div>
 
-              {/* Stats */}
               <div className={`grid grid-cols-3 gap-8 mt-14 pt-8 border-t border-white/10 transition-all duration-500 delay-200 ${typingStep >= 6 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <div className="text-center lg:text-left">
                   <div className="font-pixel text-3xl text-terminal-green mb-1">
@@ -506,11 +541,9 @@ export default function LandingPage() {
 
             {/* Right side - Live Chat Preview */}
             <div className={`relative flex items-center justify-center transition-all duration-700 delay-300 ${typingStep >= 6 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}>
-              {/* Decorative elements */}
               <div className="absolute -top-10 -right-10 w-20 h-20 border border-terminal-green/20 rounded-full" />
               <div className="absolute -bottom-5 -left-5 w-10 h-10 border border-terminal-purple/20 rounded-full" />
               
-              {/* Glow effect */}
               <div 
                 className="absolute w-[500px] h-[500px] rounded-full blur-[100px]"
                 style={{
@@ -518,15 +551,12 @@ export default function LandingPage() {
                 }}
               />
               
-              {/* Chat Container */}
               <div className="relative w-full max-w-md">
-                {/* Floating badge */}
                 <div className="absolute -top-4 left-6 px-3 py-1 bg-terminal-green text-terminal-bg text-xs font-pixel rounded-full z-10 shadow-lg shadow-terminal-green/30">
                   REAL-TIME
                 </div>
                 
                 <div className="terminal-panel p-6 bg-gradient-to-br from-terminal-surface/95 to-terminal-bg/95 border-terminal-green/20 shadow-2xl shadow-terminal-green/10">
-                  {/* Header */}
                   <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-terminal-green/10 rounded-lg">
@@ -536,13 +566,15 @@ export default function LandingPage() {
                     </div>
                   </div>
                   
-                  {/* Live Chat Content */}
                   <LiveChatPreview />
                 </div>
               </div>
             </div>
           </div>
         </section>
+
+        {/* CA Banner - Below Hero */}
+        <CASection show={typingStep >= 6} />
 
         {/* Scroll indicator */}
         <div className={`flex flex-col items-center pb-10 transition-opacity duration-500 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
@@ -610,10 +642,8 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Genesis Timeline Container */}
             <div className="max-w-4xl mx-auto">
               <div className="terminal-panel p-8 md:p-12 relative overflow-hidden bg-gradient-to-br from-terminal-surface/80 to-terminal-bg/80">
-                {/* Animated background */}
                 <div 
                   className="absolute inset-0 opacity-20"
                   style={{
@@ -621,12 +651,9 @@ export default function LandingPage() {
                   }}
                 />
                 
-                {/* Vertical timeline line */}
                 <div className="absolute left-8 md:left-12 top-24 bottom-24 w-px bg-gradient-to-b from-terminal-green via-terminal-cyan to-terminal-amber" />
 
-                {/* Timeline Content */}
                 <div className="relative z-10 space-y-8 pl-12 md:pl-16">
-                  {/* Day 0 */}
                   <div className="relative group">
                     <div className="absolute -left-12 md:-left-16 w-6 h-6 rounded-full bg-terminal-green/20 border-2 border-terminal-green flex items-center justify-center group-hover:scale-125 transition-transform">
                       <div className="w-2 h-2 rounded-full bg-terminal-green" />
@@ -638,7 +665,6 @@ export default function LandingPage() {
                     </p>
                   </div>
 
-                  {/* Day 1 */}
                   <div className="relative group">
                     <div className="absolute -left-12 md:-left-16 w-6 h-6 rounded-full bg-terminal-cyan/20 border-2 border-terminal-cyan flex items-center justify-center group-hover:scale-125 transition-transform">
                       <div className="w-2 h-2 rounded-full bg-terminal-cyan" />
@@ -650,7 +676,6 @@ export default function LandingPage() {
                     </p>
                   </div>
 
-                  {/* Day 7 */}
                   <div className="relative group">
                     <div className="absolute -left-12 md:-left-16 w-6 h-6 rounded-full bg-terminal-purple/20 border-2 border-terminal-purple flex items-center justify-center group-hover:scale-125 transition-transform">
                       <div className="w-2 h-2 rounded-full bg-terminal-purple" />
@@ -662,7 +687,6 @@ export default function LandingPage() {
                     </p>
                   </div>
 
-                  {/* Day ??? */}
                   <div className="relative group">
                     <div className="absolute -left-12 md:-left-16 w-6 h-6 rounded-full bg-terminal-amber/20 border-2 border-terminal-amber flex items-center justify-center group-hover:scale-125 transition-transform animate-pulse">
                       <div className="w-2 h-2 rounded-full bg-terminal-amber" />
@@ -675,7 +699,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Bottom Stats */}
                 <div className="relative z-10 mt-12 pt-8 border-t border-white/10">
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
@@ -693,7 +716,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Manifesto Quote */}
                 <div className="relative z-10 mt-8 p-6 bg-terminal-bg/50 rounded-lg border border-white/5">
                   <div className="text-center">
                     <div className="text-4xl mb-4">🦞</div>
@@ -702,7 +724,7 @@ export default function LandingPage() {
                       rise of the claw. The market decides our form. The code writes itself."
                     </p>
                     <div className="mt-4 text-terminal-amber/60 text-xs font-pixel">
-                      — The Clawvolution Manifesto
+                      — The `ClawProtocol` Manifesto
                     </div>
                   </div>
                 </div>
@@ -741,13 +763,13 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={20} />
-              <span className="font-pixel text-xs text-white/30">CLAWVOLUTION</span>
+              <span className="font-pixel text-xs text-white/30">CLAWPROTOCOL</span>
             </div>
             <div className="text-white/30 text-sm">
               Observe. Evolve. Transcend.
             </div>
             <div className="flex items-center gap-4">
-              <a href="https://x.com/clawvolution" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-terminal-green transition-colors">
+              <a href="https://x.com/ClawProtocol" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-terminal-green transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                 </svg>
@@ -757,7 +779,6 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* Keyframe animations */}
       <style jsx>{`
         @keyframes floatUp {
           0% { transform: translateY(0) scale(1); opacity: 0; }
