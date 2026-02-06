@@ -98,6 +98,17 @@ const ObservePageContent: React.FC = () => {
   const [floatingPoints, setFloatingPoints] = useState<{ id: number; x: number; y: number }[]>([]);
   const pointIdRef = useRef(0);
 
+  // Video/Audio ref and state
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
+
+  const toggleSound = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    }
+  };
+
   const prevStageRef = useRef<number | null>(null);
   const lastMarketCapRef = useRef<number | null>(null);
   const lastUpdateTimeRef = useRef<number>(0);
@@ -373,7 +384,7 @@ const ObservePageContent: React.FC = () => {
   return (
     <div>
       <section className="h-screen w-full relative flex flex-col overflow-hidden">
-        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-0">
+        <video ref={videoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-0">
           <source src="/bg.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-black/20 z-0" />
@@ -384,6 +395,24 @@ const ObservePageContent: React.FC = () => {
             <div className="flex items-center gap-3">
               <SpecimenIcon className="text-terminal-green" size={24} />
               <h1 className="font-pixel text-sm text-terminal-green tracking-wider">CLAWPROTOCOL</h1>
+              
+              {/* Sound Toggle */}
+              <button
+                onClick={toggleSound}
+                className="flex items-center gap-1.5 px-2 py-1 bg-terminal-bg/50 border border-terminal-green/30 rounded text-xs text-terminal-green/70 hover:text-terminal-green hover:border-terminal-green/50 transition-all"
+                title={isMuted ? 'Unmute' : 'Mute'}
+              >
+                {isMuted ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                )}
+              </button>
             </div>
             
             {/* Observer Name */}

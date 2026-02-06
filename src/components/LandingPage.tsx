@@ -396,7 +396,7 @@ export default function LandingPage() {
           </Link>
           <nav className={`flex items-center gap-6 transition-all duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
             <a 
-              href="" 
+              href="https://x.com/i/communities/2019914054790525221/?fbclid=IwY2xjawPzVo9leHRuA2FlbQIxMABicmlkETFWREI1dkM3NmdDVno0V1NIc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHqP2SdBh7J3Ez3m6X8JXGNQSUJAlYafHvUbMh5vD7n_nJzbg1kn6L0FCvWuQ_aem_y7BheTKw0KOMj3BNBXiJfw" 
               target="_blank"
               rel="noopener noreferrer"
               className="text-white/50 hover:text-terminal-green transition-all hover:scale-110"
