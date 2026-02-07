@@ -5,3 +5,4 @@ export { default as Timer } from './Timer';
 export { default as Choices } from './Choices';
 export { default as ProgressBar } from './ProgressBar';
 export { default as Vault } from './Vault';
+export { default as DeepVault } from './DeepVault';

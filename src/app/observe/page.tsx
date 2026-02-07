@@ -17,6 +17,7 @@ import {
   Timer, 
   ProgressBar,
   Vault,
+  DeepVault,
   CHAPTERS,
   TIMER_SECONDS,
 } from '@/components/game';
@@ -415,7 +416,7 @@ const GameContent: React.FC = () => {
               
               {/* Chapter Image */}
               <div className="my-4 flex justify-center">
-                <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-lg overflow-hidden border border-red-500/20 bg-black/50">
+                <div className="relative w-full max-w-2xl h-48 md:h-64 rounded-lg overflow-hidden border border-red-500/20 bg-black/50">
                   {/* Placeholder - replace src with actual chapter images */}
                   <img 
                     src={`/images/chapter-${currentChapter}.png`}
@@ -427,22 +428,30 @@ const GameContent: React.FC = () => {
                       e.currentTarget.nextElementSibling?.classList.remove('hidden');
                     }}
                   />
-                  {/* ASCII Art Fallback */}
-                  <div className="hidden absolute inset-0 flex items-center justify-center bg-black/80 font-mono text-[4px] md:text-[5px] text-red-500/70 leading-none whitespace-pre overflow-hidden p-2">
-{`    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-    ░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░
-    ░░░░▓░░░░░░░░░░░░░░░░░░▓░░░░░░
-    ░░░░▓░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░▓░░░░░░
-    ░░░░▓░░▒░░░░░░░░░░░░▒░░▓░░░░░░
-    ░░░░▓░░▒░░████████░░▒░░▓░░░░░░
-    ░░░░▓░░▒░░█CLASSIFIED█░░▒░░▓░░░░░░
-    ░░░░▓░░▒░░████████░░▒░░▓░░░░░░
-    ░░░░▓░░▒░░░░░░░░░░░░▒░░▓░░░░░░
-    ░░░░▓░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░▓░░░░░░
-    ░░░░▓░░░░░░░░░░░░░░░░░░▓░░░░░░
-    ░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░
-    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░`}
+                  {/* ASCII Art Fallback - Island Landscape */}
+                  <div className="hidden absolute inset-0 bg-black font-mono text-[2.5px] sm:text-[3px] md:text-[4px] text-red-500/90 leading-[1.2] whitespace-pre overflow-hidden flex items-end justify-center pb-2">
+{`                                                                       .         .--.                                                               
+                                                       .    .  .-+#@@#@@**+-.    .                                                                  
+                                                   .       .=@@@**+==++**#@@@@+.                                                                    
+                                                        .+@@#+=--:::::::-==+*#@@#-                                                                  
+                                                .      =@@*=-:::::::::::::::-=+#@@+     .                                                           
+                                                      #@#=-::::::..:::::::::::-=*@@*.                                                               
+                                             .       #@*=:::..   ..  ...:::::::-=*@@=                                                               
+                                                    =@@=::..          . ..::::::=+@@*                                                               
+                                                    *@#-:.               ..:::::-+#@#.       .                                                      
+                                                   .@@+:.       ..        ..::::-+*@@-                                                              
+                                                   .@@+:.    .:===-.       .::::-+*@@:                                                              
+                                     .   .          #@*:.   .-+###*+:       .:::-=*@@:                                                              
+                                                    =@@=..  :=*####*-.     ..:::-+#@#                                                               
+                                            .        #@#-:. .-+*##*+-..   ..::::-*@@+      .                                                         
+                                                     .@@*-:...:-===-:....:::::-+#@@-                                                                
+                                  .                   :@@#=::...::::...:::::-=*@@#.                                                                 
+                                                       .#@@*=-::::::::::::-=*#@@+           .                                                       
+                                               .         +@@#*+=-:::::::-=+*@@#:                                                                    
+.  .  .  .  .  .  . .  . . . . . . . . . . . . . . . . . .*@@@#*+====++*#@@@=. . . . . . . . . . . . . . . . . . . . . . . . .  .  .  .  .  .  .  . 
+~  ~  ~  ~  ~  ~  ~  ~  ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~+#@@@@@@@@@@#+~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~  ~  ~  ~  ~  ~  ~  ~  
+~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~-=++=-~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
+~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~`}
                   </div>
                   {/* Scanline effect */}
                   <div className="absolute inset-0 pointer-events-none opacity-30" style={{
@@ -507,6 +516,11 @@ const GameContent: React.FC = () => {
                 completedChapters={completedChapters.length} 
                 isVisible={true} 
               />
+            </div>
+
+            {/* The Deep Vault - 100 Questions Challenge */}
+            <div className="mt-8">
+              <DeepVault isVisible={true} />
             </div>
           </>
         )}
