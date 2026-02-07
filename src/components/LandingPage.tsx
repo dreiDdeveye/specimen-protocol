@@ -10,6 +10,107 @@ import Folder from './Folder';
 import Iceberg from './Iceberg';
 import type { ChatMessage } from '@/types';
 
+
+// Typewriter sound hook
+const useTypingSound = () => {
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
+
+  const playClick = useCallback(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    
+    const ctx = audioContextRef.current;
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    try {
+      const time = ctx.currentTime;
+      
+      // Key strike (clack)
+      const strikeOsc = ctx.createOscillator();
+      strikeOsc.type = 'square';
+      strikeOsc.frequency.setValueAtTime(150 + Math.random() * 50, time);
+      strikeOsc.frequency.exponentialRampToValueAtTime(50, time + 0.02);
+      
+      const strikeGain = ctx.createGain();
+      strikeGain.gain.setValueAtTime(0.2, time);
+      strikeGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+      
+      // Hammer hit (tink)
+      const hammerOsc = ctx.createOscillator();
+      hammerOsc.type = 'sine';
+      hammerOsc.frequency.setValueAtTime(4000 + Math.random() * 800, time);
+      hammerOsc.frequency.exponentialRampToValueAtTime(1500, time + 0.015);
+      
+      const hammerGain = ctx.createGain();
+      hammerGain.gain.setValueAtTime(0.06, time);
+      hammerGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+      
+      // Noise burst
+      const noiseLength = 0.03;
+      const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * noiseLength, ctx.sampleRate);
+      const noiseData = noiseBuffer.getChannelData(0);
+      
+      for (let i = 0; i < noiseData.length; i++) {
+        const t = i / noiseData.length;
+        const envelope = t < 0.1 ? t * 10 : Math.exp(-(t - 0.1) * 15);
+        noiseData[i] = (Math.random() * 2 - 1) * envelope;
+      }
+      
+      const noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+      
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.value = 1200 + Math.random() * 400;
+      noiseFilter.Q.value = 1.5;
+      
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.value = 0.25;
+      
+      // Master output
+      const masterGain = ctx.createGain();
+      masterGain.gain.value = 0.5;
+      
+      strikeOsc.connect(strikeGain);
+      strikeGain.connect(masterGain);
+      
+      hammerOsc.connect(hammerGain);
+      hammerGain.connect(masterGain);
+      
+      noiseSource.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(masterGain);
+      
+      masterGain.connect(ctx.destination);
+      
+      strikeOsc.start(time);
+      strikeOsc.stop(time + 0.03);
+      
+      hammerOsc.start(time);
+      hammerOsc.stop(time + 0.025);
+      
+      noiseSource.start(time);
+      noiseSource.stop(time + noiseLength);
+      
+    } catch (e) {
+      // Ignore audio errors
+    }
+  }, []);
+
+  return playClick;
+};
 // File Icon Component
 const FileIcon: React.FC<{ size?: number; className?: string }> = ({ size = 24, className = '' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
@@ -124,16 +225,16 @@ const LockedPaper: React.FC<{ chapterNum: number }> = ({ chapterNum }) => (
   </div>
 );
 
-// Chapter folder data - 8 chapters
+// Chapter folder data
 const chapterFolders = [
-  { num: 1, color: '#ef4444', subtitle: 'The Awakening', opacity: 0.95 },
-  { num: 2, color: '#f97316', subtitle: 'The Tunnels', opacity: 0.9 },
-  { num: 3, color: '#eab308', subtitle: 'The Compound', opacity: 0.85 },
-  { num: 4, color: '#22c55e', subtitle: 'The Rescue', opacity: 0.8 },
-  { num: 5, color: '#3b82f6', subtitle: 'The Ocean', opacity: 0.75 },
-  { num: 6, color: '#8b5cf6', subtitle: 'The Mainland', opacity: 0.7 },
-  { num: 7, color: '#6b7280', subtitle: 'The Investigation', opacity: 0.6 },
-  { num: 8, color: '#dc2626', subtitle: 'The Truth', opacity: 0.5 },
+  { num: 1, color: '#ef4444', subtitle: 'Flight Logs', opacity: 0.9 },
+  { num: 2, color: '#f97316', subtitle: 'Black Book', opacity: 0.85 },
+  { num: 3, color: '#eab308', subtitle: 'Court Docs', opacity: 0.8 },
+  { num: 4, color: '#22c55e', subtitle: 'Testimonies', opacity: 0.75 },
+  { num: 5, color: '#3b82f6', subtitle: 'Financials', opacity: 0.7 },
+  { num: 6, color: '#8b5cf6', subtitle: 'Intel Files', opacity: 0.65 },
+  { num: 7, color: '#6b7280', subtitle: '[REDACTED]', opacity: 0.55 },
+  { num: 8, color: '#374151', subtitle: 'The Full Truth', opacity: 0.45 },
 ];
 
 // Live Chat Preview Component (Read-Only)
@@ -478,7 +579,7 @@ export default function LandingPage() {
             <span className="font-pixel text-sm text-red-500 tracking-wider">
               {startLandingTyping && (
                 <TypewriterText 
-                  text="EPSTEIN FILES" 
+                  text="THE ISLAND" 
                   speed={50} 
                   delay={0}
                   onComplete={() => setTypingStep(1)}
@@ -912,7 +1013,7 @@ export default function LandingPage() {
                       The blockchain remembers everything."
                     </p>
                     <div className="mt-4 text-red-400/60 text-xs font-pixel">
-                      — EPSTEIN FILES MANIFESTO
+                      — THE ISLAND MANIFESTO
                     </div>
                   </div>
                 </div>
@@ -954,7 +1055,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <FileIcon className="text-red-400" size={20} />
-              <span className="font-pixel text-xs text-white/30">EPSTEIN FILES</span>
+              <span className="font-pixel text-xs text-white/30">THE ISLAND</span>
             </div>
             <div className="text-white/30 text-sm">
               The Truth. Unsealed. Forever.

@@ -272,7 +272,7 @@ const GameContent: React.FC = () => {
       <header className="relative z-10 border-b border-red-500/20 bg-black/80 backdrop-blur-sm sticky top-0">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🏝️</span>
+            <span className="text-2xl"></span>
             <span className="font-pixel text-red-500 text-sm hidden sm:inline">ESCAPE THE ISLAND</span>
             
             {/* Sound Toggle */}
@@ -529,7 +529,7 @@ const GameContent: React.FC = () => {
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/5 py-6 text-center">
         <p className="text-white/20 text-xs font-pixel">
-          🏝️ ESCAPE THE ISLAND • 8 CHAPTERS • 6 STAGES EACH • SURVIVE
+           ESCAPE THE ISLAND • 8 CHAPTERS • 6 STAGES EACH • SURVIVE
         </p>
       </footer>
 
