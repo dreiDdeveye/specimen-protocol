@@ -59,7 +59,9 @@ export const Choices: React.FC<ChoicesProps> = ({
       {/* Choices */}
       <div className="space-y-3">
         {choices.map(choice => {
-          const percentage = totalVotes > 0 ? (choice.votes / totalVotes) * 100 : 0;
+          // FIX: Handle optional votes - default to 0 if undefined
+          const votes = choice.votes ?? 0;
+          const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
           const isUser = userChoice === choice.id;
           const isWinner = winningChoice === choice.id;
 

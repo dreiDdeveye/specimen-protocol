@@ -11,15 +11,11 @@ import {
 } from '@/lib/utils';
 import type { ChatMessage } from '@/types';
 
-// Import game components
+// Import NEW game components
 import { 
-  StageDisplay, 
-  Timer, 
-  ProgressBar,
+  GameEngine,
   Vault,
   DeepVault,
-  CHAPTERS,
-  TIMER_SECONDS,
 } from '@/components/game';
 
 // Wallet Button Component
@@ -69,15 +65,11 @@ const GameContent: React.FC = () => {
   const [fingerprint, setFingerprint] = useState<string | null>(null);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
 
-  // Game State - 8 chapters, 6 stages each
-  const [currentChapter, setCurrentChapter] = useState(1); // 1-8
-  const [currentStage, setCurrentStage] = useState(0); // 0-5 (0 = starting stage 1)
+  // Game State
   const [completedChapters, setCompletedChapters] = useState<number[]>([]);
   const [unlockedDocuments, setUnlockedDocuments] = useState<string[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [showChapterComplete, setShowChapterComplete] = useState(false);
-  const [wrongAttempts, setWrongAttempts] = useState(0); // Track wrong attempts for death mechanic
-  const [showDeathScreen, setShowDeathScreen] = useState(false);
+  const [isGameComplete, setIsGameComplete] = useState(false);
 
   // Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -85,15 +77,6 @@ const GameContent: React.FC = () => {
   const [cooldownSeconds, setCooldownSeconds] = useState(5);
   const [maxLength, setMaxLength] = useState(160);
   const [isChatConnected, setIsChatConnected] = useState(false);
-
-  // Current chapter and stage data
-  const chapter = CHAPTERS[currentChapter - 1];
-  const stage = chapter?.stages[currentStage];
-  const totalChapters = CHAPTERS.length; // 8
-  const totalStages = 6;
-
-  const isGameComplete = currentChapter > totalChapters || 
-    (currentChapter === totalChapters && completedChapters.includes(totalChapters));
 
   // Init observer
   useEffect(() => {
@@ -142,71 +125,36 @@ const GameContent: React.FC = () => {
     }
   };
 
-  // Determine if current stage is a danger zone (stages 3 and 4 = index 2 and 3)
-  const isDangerStage = currentStage === 2 || currentStage === 3;
-  const maxWrongAttempts = isDangerStage ? 2 : 0; // 2 lives in danger zone, unlimited otherwise
-
-  // Handle answer from StageDisplay
-  const handleAnswer = useCallback((isCorrect: boolean) => {
-    if (isCorrect) {
-      setWrongAttempts(0); // Reset wrong attempts on correct answer
-      
-      // Unlock document if stage has one
-      if (stage?.document) {
-        setUnlockedDocuments(prev => [...prev, stage.document!.title]);
+  // Handle chapter complete from GameEngine
+  const handleChapterComplete = useCallback((chapter: number, documents: string[]) => {
+    setCompletedChapters(prev => {
+      if (!prev.includes(chapter)) {
+        return [...prev, chapter];
       }
-
-      // Check if chapter is complete
-      if (currentStage >= totalStages - 1) {
-        // Chapter complete!
-        setCompletedChapters(prev => [...prev, currentChapter]);
-        setShowChapterComplete(true);
-      } else {
-        // Move to next stage
-        setCurrentStage(prev => prev + 1);
-        setWrongAttempts(0); // Reset for new stage
-      }
-    } else {
-      // Wrong answer - increment attempts
-      setWrongAttempts(prev => prev + 1);
-    }
-  }, [currentStage, currentChapter, stage, totalStages]);
-
-  // Handle death - reset everything
-  const handleDeath = useCallback(() => {
-    setShowDeathScreen(true);
+      return prev;
+    });
+    setUnlockedDocuments(prev => {
+      const newDocs = documents.filter(d => !prev.includes(d));
+      return [...prev, ...newDocs];
+    });
     
-    // After showing death screen, reset to beginning
-    setTimeout(() => {
-      setCurrentChapter(1);
-      setCurrentStage(0);
-      setCompletedChapters([]);
-      setUnlockedDocuments([]);
-      setShowChapterComplete(false);
-      setWrongAttempts(0);
-      setShowDeathScreen(false);
-    }, 3000);
-  }, []);
-
-  // Handle next chapter
-  const handleNextChapter = useCallback(() => {
-    if (currentChapter < totalChapters) {
-      setCurrentChapter(prev => prev + 1);
-      setCurrentStage(0);
-      setShowChapterComplete(false);
-      setWrongAttempts(0); // Reset for new chapter
+    // Check if all chapters complete (currently just chapter 1)
+    // Update this when more chapters are added
+    if (chapter >= 1) {
+      // For now, chapter 1 complete = game complete (until more chapters added)
+      // setIsGameComplete(true);
     }
-  }, [currentChapter, totalChapters]);
+  }, []);
 
   // Handle restart
   const handleRestart = useCallback(() => {
-    setCurrentChapter(1);
-    setCurrentStage(0);
     setCompletedChapters([]);
     setUnlockedDocuments([]);
-    setShowChapterComplete(false);
-    setWrongAttempts(0);
-    setShowDeathScreen(false);
+    setIsGameComplete(false);
+    // Clear localStorage save
+    localStorage.removeItem('island-escape-save');
+    // Force page reload to reset GameEngine
+    window.location.reload();
   }, []);
 
   // Fetch chat messages
@@ -272,7 +220,6 @@ const GameContent: React.FC = () => {
       <header className="relative z-10 border-b border-red-500/20 bg-black/80 backdrop-blur-sm sticky top-0">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl"></span>
             <span className="font-pixel text-red-500 text-sm hidden sm:inline">ESCAPE THE ISLAND</span>
             
             {/* Sound Toggle */}
@@ -300,30 +247,6 @@ const GameContent: React.FC = () => {
       {/* Main Content */}
       <main className="relative z-10 max-w-6xl mx-auto px-4 py-6 md:py-10">
         
-        {/* Death Screen Overlay */}
-        {showDeathScreen && (
-          <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
-            <div className="text-center animate-pulse">
-              <div className="text-8xl mb-6">💀</div>
-              <h2 className="font-pixel text-4xl md:text-6xl text-red-500 mb-4">
-                YOU DIED
-              </h2>
-              <p className="text-red-400/80 text-lg mb-2">They caught you.</p>
-              <p className="text-red-400/60 text-sm mb-8">All progress lost...</p>
-              <div className="w-48 h-1 bg-red-900 rounded-full mx-auto overflow-hidden">
-                <div className="h-full bg-red-500 animate-[shrink_3s_linear]" />
-              </div>
-              <p className="text-white/30 text-xs mt-4">Restarting...</p>
-            </div>
-            <style jsx>{`
-              @keyframes shrink {
-                from { width: 100%; }
-                to { width: 0%; }
-              }
-            `}</style>
-          </div>
-        )}
-
         {/* Game Complete Screen */}
         {isGameComplete ? (
           <div className="max-w-2xl mx-auto">
@@ -333,7 +256,7 @@ const GameContent: React.FC = () => {
                 YOU ESCAPED!
               </h2>
               <p className="text-white/70 mb-2">
-                Chapters Completed: <span className="text-green-400 font-bold">{completedChapters.length}</span> / {totalChapters}
+                Chapters Completed: <span className="text-green-400 font-bold">{completedChapters.length}</span>
               </p>
               <p className="text-white/70 mb-6">
                 Documents Unlocked: <span className="text-amber-400 font-bold">{unlockedDocuments.length}</span>
@@ -358,101 +281,19 @@ const GameContent: React.FC = () => {
               />
             </div>
           </div>
-        ) : showChapterComplete ? (
-          /* Chapter Complete Screen */
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-black/60 border border-green-500/30 rounded-xl p-8 text-center">
-              <div className="text-5xl mb-4">✅</div>
-              <h2 className="font-pixel text-2xl text-green-400 mb-2">
-                {chapter.title} COMPLETE
-              </h2>
-              <p className="text-white/50 text-lg mb-6">
-                "{chapter.subtitle}"
-              </p>
-              <p className="text-white/70 mb-6">
-                You completed all 6 stages! 
-                {currentChapter < totalChapters ? ' Ready for the next chapter?' : ' You did it!'}
-              </p>
-              
-              {currentChapter < totalChapters ? (
-                <button
-                  onClick={handleNextChapter}
-                  className="px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-pixel text-lg rounded-xl transition-all shadow-lg shadow-red-500/20"
-                >
-                  CONTINUE TO CHAPTER {currentChapter + 1} →
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    setCompletedChapters(prev => [...prev, currentChapter]);
-                    setShowChapterComplete(false);
-                  }}
-                  className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-pixel text-lg rounded-xl transition-all shadow-lg shadow-green-500/20"
-                >
-                  🏆 COMPLETE GAME
-                </button>
-              )}
-            </div>
-          </div>
         ) : (
-          /* Active Game */
+          /* Active Game - Using NEW Branching GameEngine */
           <>
-            {/* Progress Bar */}
-            <div className="mb-8 max-w-2xl mx-auto">
-              <ProgressBar 
-                currentStage={currentStage}
-                totalStages={totalStages}
-                currentChapter={currentChapter}
-                totalChapters={totalChapters}
-                chapterTitle={chapter.subtitle}
-              />
-            </div>
-
-            {/* Chapter Header */}
+            {/* Chapter Image Header */}
             <div className="text-center mb-6">
-              <span className="text-red-500/60 text-xs font-pixel tracking-widest">
-                {chapter.title}
-              </span>
-              
-              {/* Chapter Image */}
               <div className="my-4 flex justify-center">
                 <div className="relative w-full max-w-2xl h-48 md:h-64 rounded-lg overflow-hidden border border-red-500/20 bg-black/50">
-                  {/* Placeholder - replace src with actual chapter images */}
+                  {/* Chapter Image */}
                   <img 
-                    src={`/images/chapter-${currentChapter}.png`}
-                    alt={chapter.subtitle}
-                    className="w-full h-full object-cover opacity-80"
-                    onError={(e) => {
-                      // Fallback to ASCII art style placeholder
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }}
+                    src="/images/chapter-1.png"
+                    alt="Chapter 1 - The Awakening"
+                    className="w-full h-full object-cover opacity-90"
                   />
-                  {/* ASCII Art Fallback - Island Landscape */}
-                  <div className="hidden absolute inset-0 bg-black font-mono text-[2.5px] sm:text-[3px] md:text-[4px] text-red-500/90 leading-[1.2] whitespace-pre overflow-hidden flex items-end justify-center pb-2">
-{`                                                                       .         .--.                                                               
-                                                       .    .  .-+#@@#@@**+-.    .                                                                  
-                                                   .       .=@@@**+==++**#@@@@+.                                                                    
-                                                        .+@@#+=--:::::::-==+*#@@#-                                                                  
-                                                .      =@@*=-:::::::::::::::-=+#@@+     .                                                           
-                                                      #@#=-::::::..:::::::::::-=*@@*.                                                               
-                                             .       #@*=:::..   ..  ...:::::::-=*@@=                                                               
-                                                    =@@=::..          . ..::::::=+@@*                                                               
-                                                    *@#-:.               ..:::::-+#@#.       .                                                      
-                                                   .@@+:.       ..        ..::::-+*@@-                                                              
-                                                   .@@+:.    .:===-.       .::::-+*@@:                                                              
-                                     .   .          #@*:.   .-+###*+:       .:::-=*@@:                                                              
-                                                    =@@=..  :=*####*-.     ..:::-+#@#                                                               
-                                            .        #@#-:. .-+*##*+-..   ..::::-*@@+      .                                                         
-                                                     .@@*-:...:-===-:....:::::-+#@@-                                                                
-                                  .                   :@@#=::...::::...:::::-=*@@#.                                                                 
-                                                       .#@@*=-::::::::::::-=*#@@+           .                                                       
-                                               .         +@@#*+=-:::::::-=+*@@#:                                                                    
-.  .  .  .  .  .  . .  . . . . . . . . . . . . . . . . . .*@@@#*+====++*#@@@=. . . . . . . . . . . . . . . . . . . . . . . . .  .  .  .  .  .  .  . 
-~  ~  ~  ~  ~  ~  ~  ~  ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~+#@@@@@@@@@@#+~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~  ~  ~  ~  ~  ~  ~  ~  
-~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~-=++=-~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
-~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~`}
-                  </div>
                   {/* Scanline effect */}
                   <div className="absolute inset-0 pointer-events-none opacity-30" style={{
                     backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)'
@@ -463,26 +304,14 @@ const GameContent: React.FC = () => {
                   }} />
                 </div>
               </div>
-              
-              <h1 className="font-pixel text-2xl md:text-4xl text-white mt-2">
-                {chapter.subtitle}
-              </h1>
             </div>
 
-            {/* Stage Display */}
+            {/* NEW Branching Game Engine */}
             <div className="max-w-3xl mx-auto mb-6">
-              {stage && (
-                <StageDisplay
-                  key={`${currentChapter}-${currentStage}-${wrongAttempts}`}
-                  stage={stage}
-                  stageNumber={currentStage + 1}
-                  onAnswer={handleAnswer}
-                  onDeath={handleDeath}
-                  soundEnabled={soundEnabled}
-                  wrongAttempts={wrongAttempts}
-                  maxWrongAttempts={maxWrongAttempts}
-                />
-              )}
+              <GameEngine 
+                soundEnabled={soundEnabled}
+                onChapterComplete={handleChapterComplete}
+              />
             </div>
 
             {/* Chat Section */}
@@ -529,7 +358,7 @@ const GameContent: React.FC = () => {
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/5 py-6 text-center">
         <p className="text-white/20 text-xs font-pixel">
-           ESCAPE THE ISLAND • 8 CHAPTERS • 6 STAGES EACH • SURVIVE
+          ESCAPE THE ISLAND • BRANCHING NARRATIVE • EVERY CHOICE MATTERS
         </p>
       </footer>
 

@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StoryStage } from './types';
+import { StoryNode, BranchingChoice } from './types';
 
-// Inline Timer Component for Stage
-const StageTimer: React.FC<{
+// Timer Component
+const StoryTimer: React.FC<{
   seconds: number;
   running: boolean;
   onEnd: () => void;
@@ -78,23 +78,21 @@ const StageTimer: React.FC<{
 
       {isCritical && timeLeft > 0 && (
         <span className="text-red-500 text-[9px] font-pixel">
-          HURRY!
+          DECIDE NOW!
         </span>
       )}
     </div>
   );
 };
 
-// Authentic typewriter sound - mechanical key strike
+// Typewriter sound hook
 const useTypingSound = (enabled: boolean = true) => {
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Initialize audio context immediately (user has already clicked to start game)
   useEffect(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
-    // Resume immediately - user interaction already happened to get to this screen
     if (audioContextRef.current.state === 'suspended') {
       audioContextRef.current.resume();
     }
@@ -110,7 +108,6 @@ const useTypingSound = (enabled: boolean = true) => {
   const playClick = useCallback(() => {
     if (!enabled) return;
     
-    // Create context if needed
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -123,7 +120,7 @@ const useTypingSound = (enabled: boolean = true) => {
     try {
       const time = ctx.currentTime;
       
-      // === PART 1: Initial key strike (the "clack") ===
+      // Key strike
       const strikeOsc = ctx.createOscillator();
       strikeOsc.type = 'square';
       strikeOsc.frequency.setValueAtTime(150 + Math.random() * 50, time);
@@ -133,7 +130,7 @@ const useTypingSound = (enabled: boolean = true) => {
       strikeGain.gain.setValueAtTime(0.25, time);
       strikeGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
       
-      // === PART 2: Metal hammer hitting (the "tink") ===
+      // Hammer hit
       const hammerOsc = ctx.createOscillator();
       hammerOsc.type = 'sine';
       hammerOsc.frequency.setValueAtTime(4000 + Math.random() * 800, time);
@@ -143,7 +140,7 @@ const useTypingSound = (enabled: boolean = true) => {
       hammerGain.gain.setValueAtTime(0.08, time);
       hammerGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
       
-      // === PART 3: Mechanical noise (paper/ribbon impact) ===
+      // Noise burst
       const noiseLength = 0.03;
       const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * noiseLength, ctx.sampleRate);
       const noiseData = noiseBuffer.getChannelData(0);
@@ -165,27 +162,21 @@ const useTypingSound = (enabled: boolean = true) => {
       const noiseGain = ctx.createGain();
       noiseGain.gain.value = 0.3;
       
-      // === Master output ===
       const masterGain = ctx.createGain();
       masterGain.gain.value = 0.7;
       
-      // Connect strike
       strikeOsc.connect(strikeGain);
       strikeGain.connect(masterGain);
       
-      // Connect hammer
       hammerOsc.connect(hammerGain);
       hammerGain.connect(masterGain);
       
-      // Connect noise
       noiseSource.connect(noiseFilter);
       noiseFilter.connect(noiseGain);
       noiseGain.connect(masterGain);
       
-      // Output
       masterGain.connect(ctx.destination);
       
-      // Play all parts
       strikeOsc.start(time);
       strikeOsc.stop(time + 0.03);
       
@@ -209,7 +200,7 @@ const DocumentCard: React.FC<{
   preview: string;
   pdfUrl: string;
 }> = ({ title, preview, pdfUrl }) => (
-  <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+  <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg animate-fadeIn">
     <div className="flex items-start gap-3">
       <div className="p-2 bg-red-500/20 rounded-lg shrink-0">
         <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,131 +223,57 @@ const DocumentCard: React.FC<{
   </div>
 );
 
-// Main Stage Display Component
-interface StageDisplayProps {
-  stage: StoryStage;
-  stageNumber: number;
-  onAnswer: (isCorrect: boolean) => void;
-  onTimeUp?: () => void;
-  onDeath?: () => void;
+// Main Story Node Display Component
+interface StoryNodeDisplayProps {
+  node: StoryNode;
+  onChoice: (choice: BranchingChoice) => void;
+  onContinue: () => void;
+  onDeath: () => void;
+  onChapterComplete: (nextChapter: number) => void;
   soundEnabled?: boolean;
-  wrongAttempts?: number;
-  maxWrongAttempts?: number;
 }
 
-export const StageDisplay: React.FC<StageDisplayProps> = ({
-  stage,
-  stageNumber,
-  onAnswer,
-  onTimeUp,
+export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
+  node,
+  onChoice,
+  onContinue,
   onDeath,
+  onChapterComplete,
   soundEnabled = true,
-  wrongAttempts = 0,
-  maxWrongAttempts = 0, // 0 means unlimited
 }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
-  const [showQuestion, setShowQuestion] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [selectedIsCorrect, setSelectedIsCorrect] = useState<boolean | null>(null);
-  const [answerResult, setAnswerResult] = useState<'correct' | 'wrong' | 'death' | null>(null);
+  const [showChoices, setShowChoices] = useState(false);
+  const [selectedChoice, setSelectedChoice] = useState<BranchingChoice | null>(null);
+  const [showConsequence, setShowConsequence] = useState(false);
   const [showDocument, setShowDocument] = useState(false);
-  const [canRetry, setCanRetry] = useState(false);
   const [timerKey, setTimerKey] = useState(0);
   const [waitingForTimer, setWaitingForTimer] = useState(false);
 
-  // Check if this is a death scenario
-  const isDangerZone = maxWrongAttempts > 0;
-  const attemptsLeft = maxWrongAttempts - wrongAttempts;
-
-  // Handle time up - reveal the answer result
-  const handleTimeUp = useCallback(() => {
-    // If user has selected an answer, reveal the result now
-    if (selectedAnswer !== null && selectedIsCorrect !== null) {
-      setWaitingForTimer(false);
-      
-      if (selectedIsCorrect) {
-        setAnswerResult('correct');
-        // Show document if correct and document exists
-        if (stage.document) {
-          setTimeout(() => setShowDocument(true), 500);
-        }
-        // Callback after delay
-        setTimeout(() => {
-          onAnswer(true);
-        }, 2000);
-      } else {
-        // Check if this wrong answer causes death
-        if (isDangerZone && attemptsLeft <= 1) {
-          // DEATH!
-          setAnswerResult('death');
-          setTimeout(() => {
-            if (onDeath) onDeath();
-          }, 2500);
-        } else {
-          // Wrong answer - allow retry after delay
-          setAnswerResult('wrong');
-          setTimeout(() => {
-            setCanRetry(true);
-            setSelectedAnswer(null);
-            setSelectedIsCorrect(null);
-            setAnswerResult(null);
-            setTimerKey(prev => prev + 1); // Reset timer for retry
-            onAnswer(false); // Report wrong to parent for tracking
-          }, 1500);
-        }
-      }
-    } else {
-      // No answer selected - treat as wrong
-      if (onTimeUp) {
-        onTimeUp();
-      } else {
-        if (isDangerZone && attemptsLeft <= 1) {
-          // DEATH!
-          setAnswerResult('death');
-          setTimeout(() => {
-            if (onDeath) onDeath();
-          }, 2500);
-        } else {
-          setAnswerResult('wrong');
-          setTimeout(() => {
-            setCanRetry(true);
-            setSelectedAnswer(null);
-            setSelectedIsCorrect(null);
-            setAnswerResult(null);
-            setTimerKey(prev => prev + 1);
-            onAnswer(false);
-          }, 1500);
-        }
-      }
-    }
-  }, [onTimeUp, onDeath, onAnswer, isDangerZone, attemptsLeft, selectedAnswer, selectedIsCorrect, stage.document]);
-
-  // Get the typing sound function
   const playTypeSound = useTypingSound(soundEnabled);
 
-  // Typewriter effect for story text - plays sound on each character
+  // Reset state when node changes
   useEffect(() => {
     setDisplayedText('');
     setIsTyping(true);
-    setShowQuestion(false);
-    setSelectedAnswer(null);
-    setSelectedIsCorrect(null);
-    setAnswerResult(null);
+    setShowChoices(false);
+    setSelectedChoice(null);
+    setShowConsequence(false);
     setShowDocument(false);
-    setCanRetry(false);
     setWaitingForTimer(false);
-    setTimerKey(prev => prev + 1); // Reset timer on new stage
+    setTimerKey(prev => prev + 1);
+  }, [node.id]);
 
+  // Typewriter effect
+  useEffect(() => {
     let index = 0;
-    const text = stage.text;
-    const typingSpeed = 35; // ms per character
+    const text = node.text;
+    const typingSpeed = 35;
     
     const typeNextChar = () => {
       if (index < text.length) {
         setDisplayedText(text.slice(0, index + 1));
         
-        // Play sound for visible characters (not spaces)
         if (text[index] !== ' ' && soundEnabled) {
           playTypeSound();
         }
@@ -365,136 +282,214 @@ export const StageDisplay: React.FC<StageDisplayProps> = ({
         setTimeout(typeNextChar, typingSpeed);
       } else {
         setIsTyping(false);
-        // Show question after text completes
-        setTimeout(() => setShowQuestion(true), 500);
+        
+        // Show document if exists
+        if (node.document) {
+          setTimeout(() => setShowDocument(true), 300);
+        }
+        
+        // Show choices after text completes (for choice nodes)
+        if (node.type === 'choice' && node.choices) {
+          setTimeout(() => setShowChoices(true), 500);
+        }
+        
+        // Auto-continue for narrative nodes
+        if (node.type === 'narrative' && node.nextNode) {
+          setTimeout(() => onContinue(), 2000);
+        }
+        
+        // Handle death nodes
+        if (node.type === 'death') {
+          setTimeout(() => onDeath(), 3000);
+        }
+        
+        // Handle chapter complete
+        if (node.type === 'chapter-end' && node.chapterComplete) {
+          setTimeout(() => {
+            onChapterComplete(node.chapterComplete!.nextChapter);
+          }, 4000);
+        }
       }
     };
     
-    // Start typing
     typeNextChar();
 
     return () => {
-      index = text.length; // Stop typing on cleanup
+      index = text.length;
     };
-  }, [stage, soundEnabled, playTypeSound]);
+  }, [node, soundEnabled, playTypeSound, onContinue, onDeath, onChapterComplete]);
 
-  // Handle answer selection - locks in answer but doesn't reveal result
-  const handleAnswer = (choiceId: string, isCorrect: boolean) => {
-    if (selectedAnswer || waitingForTimer) return; // Already answered
+  // Handle choice selection - locks in but waits for timer
+  const handleChoiceSelect = (choice: BranchingChoice) => {
+    if (selectedChoice || waitingForTimer) return;
     
-    setSelectedAnswer(choiceId);
-    setSelectedIsCorrect(isCorrect);
+    setSelectedChoice(choice);
     setWaitingForTimer(true);
-    setCanRetry(false);
+    
+    if (choice.consequence) {
+      setShowConsequence(true);
+    }
   };
 
-  // Reset for retry
-  const handleRetry = () => {
-    setSelectedAnswer(null);
-    setSelectedIsCorrect(null);
-    setAnswerResult(null);
-    setCanRetry(false);
-    setWaitingForTimer(false);
+  // Handle timer end - proceed with chosen choice
+  const handleTimerEnd = useCallback(() => {
+    if (selectedChoice) {
+      // Choice was made, proceed to next node
+      setWaitingForTimer(false);
+      setTimeout(() => {
+        onChoice(selectedChoice);
+      }, 500);
+    } else if (node.choices && node.choices.length > 0) {
+      // No choice made - auto-select first choice (or random)
+      const defaultChoice = node.choices[0];
+      setSelectedChoice(defaultChoice);
+      setShowConsequence(true);
+      setTimeout(() => {
+        onChoice(defaultChoice);
+      }, 1500);
+    }
+  }, [selectedChoice, node.choices, onChoice]);
+
+  // Determine node type styling
+  const getBorderStyle = () => {
+    switch (node.type) {
+      case 'death':
+        return 'border-red-500/70 bg-red-900/20';
+      case 'chapter-end':
+        return 'border-green-500/50 bg-green-900/10';
+      case 'victory':
+        return 'border-amber-500/50 bg-amber-900/10';
+      default:
+        return 'border-white/10';
+    }
   };
 
   return (
-    <div className={`bg-black/60 backdrop-blur-sm border rounded-xl p-5 md:p-8 relative overflow-hidden ${
-      isDangerZone ? 'border-red-500/50' : 'border-white/10'
-    }`}>
-      {/* Danger zone warning */}
-      {isDangerZone && (
-        <div className="absolute top-0 left-0 right-0 bg-red-500/20 border-b border-red-500/30 px-4 py-2 flex items-center justify-between">
-          <span className="text-red-400 text-xs font-pixel flex items-center gap-2">
-            <span className="animate-pulse">⚠️</span> DANGER ZONE
-          </span>
-          <span className="text-red-400 text-xs font-pixel">
-            {attemptsLeft} {attemptsLeft === 1 ? 'LIFE' : 'LIVES'} LEFT
-          </span>
+    <div className={`bg-black/60 backdrop-blur-sm border rounded-xl p-5 md:p-8 relative overflow-hidden ${getBorderStyle()}`}>
+      {/* Death overlay */}
+      {node.type === 'death' && (
+        <div className="absolute top-0 left-0 right-0 bg-red-500/20 border-b border-red-500/30 px-4 py-2 flex items-center justify-center gap-2">
+          <span className="text-red-500 text-lg">💀</span>
+          <span className="text-red-400 text-sm font-pixel">DEATH</span>
+        </div>
+      )}
+      
+      {/* Chapter complete overlay */}
+      {node.type === 'chapter-end' && (
+        <div className="absolute top-0 left-0 right-0 bg-green-500/20 border-b border-green-500/30 px-4 py-2 flex items-center justify-center gap-2">
+          <span className="text-green-500 text-lg">✓</span>
+          <span className="text-green-400 text-sm font-pixel">CHAPTER COMPLETE</span>
         </div>
       )}
       
       {/* Atmosphere effect */}
       <div className={`absolute inset-0 pointer-events-none ${
-        isDangerZone 
-          ? 'bg-gradient-to-b from-red-900/20 to-transparent' 
+        node.type === 'death' 
+          ? 'bg-gradient-to-b from-red-900/30 to-transparent' 
+          : node.type === 'chapter-end'
+          ? 'bg-gradient-to-b from-green-900/20 to-transparent'
           : 'bg-gradient-to-b from-red-900/5 to-transparent'
       }`} />
       
-      {/* Stage indicator */}
-      <div className={`flex items-center gap-2 mb-4 ${isDangerZone ? 'mt-6' : ''}`}>
-        <span className="text-red-400/60 text-xs font-pixel">STAGE {stageNumber}</span>
+      {/* Node ID indicator (for debugging/reference) */}
+      <div className={`flex items-center gap-2 mb-4 ${node.type === 'death' || node.type === 'chapter-end' ? 'mt-6' : ''}`}>
+        <span className="text-red-400/40 text-xs font-pixel">{node.id.toUpperCase()}</span>
         <div className="flex-1 h-px bg-white/10" />
       </div>
 
       {/* Story text */}
       <div className="relative z-10 mb-6">
-        <p className="text-white/90 leading-relaxed font-mono text-sm md:text-base">
+        <p className={`leading-relaxed font-mono text-sm md:text-base ${
+          node.type === 'death' ? 'text-red-300/90' : 
+          node.type === 'chapter-end' ? 'text-green-300/90' :
+          'text-white/90'
+        }`}>
           {displayedText}
           {isTyping && <span className="text-red-500 animate-pulse ml-0.5">▊</span>}
         </p>
       </div>
 
+      {/* Death message */}
+      {node.type === 'death' && node.deathMessage && !isTyping && (
+        <div className="mt-4 p-4 bg-red-900/50 border-2 border-red-500 rounded-lg text-center animate-fadeIn">
+          <p className="text-2xl mb-2">💀</p>
+          <p className="text-red-400 font-pixel text-lg mb-2">YOU DIED</p>
+          <p className="text-red-400/80 text-sm">{node.deathMessage}</p>
+          <p className="text-red-400/60 text-xs mt-3">Restarting...</p>
+        </div>
+      )}
+
+      {/* Chapter complete message */}
+      {node.type === 'chapter-end' && node.chapterComplete && !isTyping && (
+        <div className="mt-4 p-4 bg-green-900/30 border border-green-500/50 rounded-lg text-center animate-fadeIn">
+          <p className="text-2xl mb-2">🏆</p>
+          <p className="text-green-400 font-pixel text-lg mb-2">
+            CHAPTER {node.chapterComplete.chapter} COMPLETE
+          </p>
+          <p className="text-green-400/80 text-sm">{node.chapterComplete.summary}</p>
+          <p className="text-green-400/60 text-xs mt-3">
+            Loading Chapter {node.chapterComplete.nextChapter}...
+          </p>
+        </div>
+      )}
+
+      {/* Document unlock */}
+      {showDocument && node.document && (
+        <DocumentCard
+          title={node.document.title}
+          preview={node.document.preview}
+          pdfUrl={node.document.pdfUrl}
+        />
+      )}
+
       {/* Question and choices */}
-      {showQuestion && (
+      {showChoices && node.type === 'choice' && node.choices && (
         <div className="relative z-10 animate-fadeIn">
           {/* Question */}
-          <div className="mb-4 p-3 bg-white/5 border border-white/10 rounded-lg">
-            <p className="text-amber-400 text-sm font-medium">{stage.question}</p>
-          </div>
+          {node.question && (
+            <div className="mb-4 p-3 bg-white/5 border border-white/10 rounded-lg">
+              <p className="text-amber-400 text-sm font-medium">{node.question}</p>
+            </div>
+          )}
 
           {/* Choices */}
           <div className="grid gap-2">
-            {stage.choices.map((choice) => {
-              const isSelected = selectedAnswer === choice.id;
-              const showResult = answerResult !== null && !canRetry;
-              const isLocked = waitingForTimer && selectedAnswer !== null;
+            {node.choices.map((choice) => {
+              const isSelected = selectedChoice?.id === choice.id;
+              const isLocked = waitingForTimer && selectedChoice !== null;
               
               let buttonClass = 'w-full p-3 text-left rounded-lg border transition-all text-sm ';
               
-              if (canRetry || (!answerResult && !isLocked)) {
-                // Can click - either fresh or retry mode
-                buttonClass += 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 text-white/80 cursor-pointer';
-              } else if (isLocked && isSelected) {
-                // User selected this answer, waiting for timer
+              if (!isLocked) {
+                // Can click
+                buttonClass += 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-amber-500/50 text-white/80 cursor-pointer';
+              } else if (isSelected) {
+                // Selected, waiting for timer
                 buttonClass += 'bg-amber-500/20 border-amber-500 text-amber-400';
-              } else if (isLocked && !isSelected) {
+              } else {
                 // Other choices while waiting
                 buttonClass += 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed';
-              } else if (isSelected && answerResult === 'correct') {
-                // User selected correct answer
-                buttonClass += 'bg-green-500/20 border-green-500 text-green-400';
-              } else if (isSelected && answerResult === 'wrong') {
-                // User selected wrong answer - only highlight their wrong choice
-                buttonClass += 'bg-red-500/20 border-red-500 text-red-400';
-              } else {
-                // Other choices - keep them neutral (don't reveal correct answer)
-                buttonClass += 'bg-white/5 border-white/10 text-white/40';
               }
 
               return (
                 <button
                   key={choice.id}
-                  onClick={() => handleAnswer(choice.id, choice.isCorrect)}
-                  disabled={(showResult && !canRetry) || isLocked}
+                  onClick={() => handleChoiceSelect(choice)}
+                  disabled={isLocked}
                   className={buttonClass}
                 >
                   <span className="flex items-center gap-3">
                     <span className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-bold shrink-0">
                       {choice.id.toUpperCase()}
                     </span>
-                    <span>{choice.text}</span>
+                    <span className="flex-1">{choice.text}</span>
                     {isLocked && isSelected && (
-                      <span className="ml-auto flex items-center gap-1 text-amber-400">
+                      <span className="flex items-center gap-1 text-amber-400">
                         <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" strokeWidth="2" />
                           <path d="M7 11V7a5 5 0 0 1 10 0v4" strokeWidth="2" />
                         </svg>
                         <span className="text-xs">LOCKED</span>
-                      </span>
-                    )}
-                    {showResult && isSelected && (
-                      <span className="ml-auto">
-                        {answerResult === 'correct' ? '✓' : '✗'}
                       </span>
                     )}
                   </span>
@@ -503,14 +498,21 @@ export const StageDisplay: React.FC<StageDisplayProps> = ({
             })}
           </div>
 
+          {/* Consequence text */}
+          {showConsequence && selectedChoice?.consequence && (
+            <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-center animate-fadeIn">
+              <p className="text-amber-400/80 text-sm italic">{selectedChoice.consequence}</p>
+            </div>
+          )}
+
           {/* Timer */}
-          {!answerResult && (
+          {!node.noTimer && (
             <div className="mt-6 flex flex-col items-center gap-3">
-              <StageTimer 
+              <StoryTimer 
                 key={timerKey}
-                seconds={300} 
-                running={!answerResult && showQuestion} 
-                onEnd={handleTimeUp}
+                seconds={node.timerSeconds || 300} 
+                running={showChoices} 
+                onEnd={handleTimerEnd}
               />
               {waitingForTimer && (
                 <div className="text-amber-400 text-xs font-pixel animate-pulse flex items-center gap-2">
@@ -518,58 +520,26 @@ export const StageDisplay: React.FC<StageDisplayProps> = ({
                     <circle cx="12" cy="12" r="10" strokeWidth="2" />
                     <path strokeLinecap="round" strokeWidth="2" d="M12 6v6l4 2" />
                   </svg>
+                  CHOICE LOCKED - WAITING FOR TIMER
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Answer feedback */}
-          {answerResult && !canRetry && (
-            <div className={`mt-4 p-4 rounded-lg text-center ${
-              answerResult === 'correct' 
-                ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                : answerResult === 'death'
-                ? 'bg-red-900/50 text-red-400 border-2 border-red-500'
-                : 'bg-red-500/20 text-red-400 border border-red-500/30'
-            }`}>
-              {answerResult === 'correct' && (
-                <p className="text-sm font-medium">✅ Correct! Moving to next stage...</p>
-              )}
-              {answerResult === 'wrong' && (
-                <p className="text-sm font-medium">
-                  {selectedAnswer ? '❌ Wrong answer! Try again...' : '⏰ Time\'s up! Try again...'}
+              {!selectedChoice && (
+                <p className="text-white/30 text-xs text-center">
+                  Choose before time runs out, or the first option will be selected
                 </p>
-              )}
-              {answerResult === 'death' && (
-                <div className="space-y-2">
-                  <p className="text-2xl">💀</p>
-                  <p className="text-lg font-pixel text-red-500">YOU DIED</p>
-                  <p className="text-sm text-red-400/80">They caught you. Game over.</p>
-                  <p className="text-xs text-red-400/60 mt-2">Restarting from the beginning...</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Retry prompt */}
-          {canRetry && (
-            <div className="mt-4 p-3 rounded-lg text-center bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              <p className="text-sm font-medium mb-2">Choose again - pick the right answer!</p>
-              {isDangerZone && (
-                <p className="text-xs text-red-400">⚠️ {attemptsLeft} {attemptsLeft === 1 ? 'life' : 'lives'} remaining!</p>
               )}
             </div>
           )}
         </div>
       )}
 
-      {/* Document unlock */}
-      {showDocument && stage.document && (
-        <DocumentCard
-          title={stage.document.title}
-          preview={stage.document.preview}
-          pdfUrl={stage.document.pdfUrl}
-        />
+      {/* Continue prompt for narrative nodes */}
+      {node.type === 'narrative' && !isTyping && (
+        <div className="mt-6 text-center animate-fadeIn">
+          <p className="text-white/40 text-xs font-pixel animate-pulse">
+            Continuing...
+          </p>
+        </div>
       )}
 
       <style jsx>{`
@@ -585,4 +555,4 @@ export const StageDisplay: React.FC<StageDisplayProps> = ({
   );
 };
 
-export default StageDisplay;
+export default StoryNodeDisplay;
