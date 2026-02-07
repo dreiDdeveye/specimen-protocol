@@ -1,40 +1,25 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { SpecimenRenderer, EvolutionHUD, ChatConsole, UsernameModal, LiveFeedLeaderboard } from '@/components';
-import DexChart from '@/components/DexChart';
-import LoadingScreen from '@/components/LoadingScreen';
+import React, { useState, useEffect, useCallback } from 'react';
 import { WalletProvider, useWallet } from '@/lib/WalletProvider';
-import { SpecimenIcon, TerminalIcon, AlertIcon } from '@/icons';
+import { UsernameModal, ChatConsole } from '@/components';
+import LoadingScreen from '@/components/LoadingScreen';
 import {
   generateFingerprint,
-  getStoredObserver,
   setStoredObserver,
   type StoredObserver,
 } from '@/lib/utils';
-import type { SpecimenState, EvolutionStage, ChatMessage } from '@/types';
+import type { ChatMessage } from '@/types';
 
-// Token address for DexScreener
-const TOKEN_ADDRESS = 'GoctGHWWBViKRKKUoqQrVvrK3JQdvo1KTEQE1CSopump';
-const CHAIN_ID = 'solana';
-const MARKET_CAP_POLL_INTERVAL = 5000; // 5 seconds
-
-// Floating +1 Animation Component
-const FloatingPoints: React.FC<{ points: { id: number; x: number; y: number }[] }> = ({ points }) => {
-  return (
-    <>
-      {points.map((point) => (
-        <div
-          key={point.id}
-          className="absolute pointer-events-none font-pixel text-terminal-green text-2xl animate-float-up"
-          style={{ left: point.x, top: point.y }}
-        >
-          +1
-        </div>
-      ))}
-    </>
-  );
-};
+// Import game components
+import { 
+  StageDisplay, 
+  Timer, 
+  ProgressBar,
+  Vault,
+  CHAPTERS,
+  TIMER_SECONDS,
+} from '@/components/game';
 
 // Wallet Button Component
 const WalletButton: React.FC = () => {
@@ -45,20 +30,17 @@ const WalletButton: React.FC = () => {
       <button
         onClick={connect}
         disabled={connecting}
-        className="flex items-center gap-2 px-4 py-2 bg-terminal-green/10 border border-terminal-green/50 text-terminal-green text-sm rounded-lg hover:bg-terminal-green/20 transition-all disabled:opacity-50"
+        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/50 text-red-400 text-sm rounded-lg hover:bg-red-500/20 transition-all"
       >
         {connecting ? (
           <>
-            <div className="w-4 h-4 border-2 border-terminal-green/30 border-t-terminal-green rounded-full animate-spin" />
+            <span className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
             <span>Connecting...</span>
           </>
         ) : (
           <>
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 7V5C19 3.9 18.1 3 17 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H17C18.1 21 19 20.1 19 19V17" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M21 12H13C11.9 12 11 12.9 11 14C11 15.1 11.9 16 13 16H21V12Z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span>Connect to Feed</span>
+            <span>🔗</span>
+            <span>Connect Wallet</span>
           </>
         )}
       </button>
@@ -68,78 +50,60 @@ const WalletButton: React.FC = () => {
   return (
     <button
       onClick={disconnect}
-      className="flex items-center gap-2 px-3 py-2 bg-black/30 border border-terminal-green/30 text-white/60 text-xs rounded-lg hover:border-red-500/50 hover:text-red-400 transition-all"
-      title="Disconnect wallet"
+      className="flex items-center gap-2 px-3 py-2 bg-black/30 border border-green-500/30 text-white/60 text-xs rounded-lg hover:border-red-500/50 hover:text-red-400 transition-all"
     >
-      <div className="w-2 h-2 rounded-full bg-terminal-green animate-pulse" />
+      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
       <span className="font-mono">{publicKey?.slice(0, 4)}...{publicKey?.slice(-4)}</span>
-      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M18 6L6 18M6 6L18 18" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
     </button>
   );
 };
 
-// Main Page Content Component
-const ObservePageContent: React.FC = () => {
-  const { connected, publicKey, connect } = useWallet();
-  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+// Main Game Content
+const GameContent: React.FC = () => {
+  const { connected } = useWallet();
+  
+  // Auth State
+  const [loading, setLoading] = useState(true);
   const [observer, setObserver] = useState<StoredObserver | null>(null);
   const [fingerprint, setFingerprint] = useState<string | null>(null);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
 
-  const [specimenState, setSpecimenState] = useState<SpecimenState | null>(null);
-  const [currentStage, setCurrentStage] = useState<EvolutionStage | null>(null);
-  const [nextStage, setNextStage] = useState<EvolutionStage | null>(null);
-  const [isEvolving, setIsEvolving] = useState(false);
+  // Game State - 8 chapters, 6 stages each
+  const [currentChapter, setCurrentChapter] = useState(1); // 1-8
+  const [currentStage, setCurrentStage] = useState(0); // 0-5 (0 = starting stage 1)
+  const [completedChapters, setCompletedChapters] = useState<number[]>([]);
+  const [unlockedDocuments, setUnlockedDocuments] = useState<string[]>([]);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showChapterComplete, setShowChapterComplete] = useState(false);
+  const [wrongAttempts, setWrongAttempts] = useState(0); // Track wrong attempts for death mechanic
+  const [showDeathScreen, setShowDeathScreen] = useState(false);
 
-  // Floating points animation
-  const [floatingPoints, setFloatingPoints] = useState<{ id: number; x: number; y: number }[]>([]);
-  const pointIdRef = useRef(0);
-
-  // Video/Audio ref and state
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(true);
-
-  const toggleSound = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
-    }
-  };
-
-  const prevStageRef = useRef<number | null>(null);
-  const lastMarketCapRef = useRef<number | null>(null);
-  const lastUpdateTimeRef = useRef<number>(0);
-
+  // Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatEnabled, setChatEnabled] = useState(true);
   const [cooldownSeconds, setCooldownSeconds] = useState(5);
   const [maxLength, setMaxLength] = useState(160);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isChatConnected, setIsChatConnected] = useState(false);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  // Current chapter and stage data
+  const chapter = CHAPTERS[currentChapter - 1];
+  const stage = chapter?.stages[currentStage];
+  const totalChapters = CHAPTERS.length; // 8
+  const totalStages = 6;
 
-  // Initialize observer
+  const isGameComplete = currentChapter > totalChapters || 
+    (currentChapter === totalChapters && completedChapters.includes(totalChapters));
+
+  // Init observer
   useEffect(() => {
     const init = async () => {
       try {
         const fp = await generateFingerprint();
         setFingerprint(fp);
-
         const res = await fetch(`/api/observers?fingerprint=${fp}`);
         const data = await res.json();
-
         if (data.success && data.exists) {
-          const obs = {
-            id: data.observer.id,
-            username: data.observer.username,
-            fingerprint: fp,
-          };
+          const obs = { id: data.observer.id, username: data.observer.username, fingerprint: fp };
           setStoredObserver(obs);
           setObserver(obs);
         } else {
@@ -147,133 +111,104 @@ const ObservePageContent: React.FC = () => {
         }
       } catch (err) {
         console.error('Init error:', err);
-        setError('Failed to initialize. Please refresh.');
       } finally {
-        setIsInitializing(false);
+        setLoading(false);
       }
     };
     init();
   }, []);
 
-  // Update wallet address when connected
-  useEffect(() => {
-    const updateWallet = async () => {
-      if (connected && publicKey && observer) {
-        try {
-          await fetch('/api/observers/wallet', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              observerId: observer.id,
-              walletAddress: publicKey,
-            }),
-          });
-        } catch (err) {
-          console.error('Failed to save wallet:', err);
-        }
-      }
-    };
-    updateWallet();
-  }, [connected, publicKey, observer]);
-
-  // Handle tap on specimen to feed
-  const handleSpecimenTap = async (e: React.MouseEvent) => {
-    if (!connected) {
-      connect();
-      return;
-    }
-
-    if (!observer || !publicKey) return;
-
-    // Add floating +1 animation
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const newPoint = { id: pointIdRef.current++, x, y };
-    setFloatingPoints(prev => [...prev, newPoint]);
-    
-    // Remove after animation
-    setTimeout(() => {
-      setFloatingPoints(prev => prev.filter(p => p.id !== newPoint.id));
-    }, 1000);
-
-    // Record feed to database (fire and forget for instant feel)
-    fetch('/api/feeds', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        observerId: observer.id,
-        username: observer.username,
-        amount: 1,
-        walletAddress: publicKey,
-      }),
-    }).catch(err => {
-      console.error('Feed error:', err);
-    });
-  };
-
-  const updateSpecimenData = useCallback((data: any) => {
-    if (!data.success || !data.state || !data.stage) return;
-
-    const newMarketCap = Number(data.state.market_cap);
-    const newTimestamp = data._timestamp || Date.now();
-
-    if (newTimestamp < lastUpdateTimeRef.current) {
-      return;
-    }
-
-    if (lastMarketCapRef.current !== null && lastMarketCapRef.current === newMarketCap) {
-      lastUpdateTimeRef.current = newTimestamp;
-      return;
-    }
-
-    lastMarketCapRef.current = newMarketCap;
-    lastUpdateTimeRef.current = newTimestamp;
-
-    const currentStageNum = data.state.current_stage || 1;
-    if (prevStageRef.current !== null && currentStageNum > prevStageRef.current) {
-      setIsEvolving(true);
-      setTimeout(() => setIsEvolving(false), 2000);
-    }
-    prevStageRef.current = currentStageNum;
-
-    setSpecimenState(data.state);
-    setCurrentStage(data.stage);
-    setNextStage(data.nextStage || null);
-  }, []);
-
-  const fetchSpecimenState = useCallback(async () => {
+  // Handle username submit
+  const handleUsernameSubmit = async (username: string) => {
+    if (!fingerprint) return { success: false, error: 'No fingerprint' };
     try {
-      const res = await fetch(`/api/specimen?_t=${Date.now()}`, {
-        method: 'GET',
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
-      });
-      const data = await res.json();
-      updateSpecimenData(data);
-    } catch (err) {
-      console.error('Fetch specimen error:', err);
-    }
-  }, [updateSpecimenData]);
-
-  const fetchMarketCap = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/dexscreener?_t=${Date.now()}`, {
+      const res = await fetch('/api/observers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-        body: JSON.stringify({ token: TOKEN_ADDRESS }),
-        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, fingerprint }),
       });
       const data = await res.json();
       if (data.success) {
-        setTimeout(fetchSpecimenState, 500);
+        const obs = { id: data.observer.id, username, fingerprint };
+        setStoredObserver(obs);
+        setObserver(obs);
+        setShowUsernameModal(false);
+        return { success: true };
       }
-    } catch (err) {
-      console.error('[DexScreener] Fetch error:', err);
+      return { success: false, error: data.error };
+    } catch {
+      return { success: false, error: 'Failed to register' };
     }
-  }, [fetchSpecimenState]);
+  };
 
+  // Determine if current stage is a danger zone (stages 3 and 4 = index 2 and 3)
+  const isDangerStage = currentStage === 2 || currentStage === 3;
+  const maxWrongAttempts = isDangerStage ? 2 : 0; // 2 lives in danger zone, unlimited otherwise
+
+  // Handle answer from StageDisplay
+  const handleAnswer = useCallback((isCorrect: boolean) => {
+    if (isCorrect) {
+      setWrongAttempts(0); // Reset wrong attempts on correct answer
+      
+      // Unlock document if stage has one
+      if (stage?.document) {
+        setUnlockedDocuments(prev => [...prev, stage.document!.title]);
+      }
+
+      // Check if chapter is complete
+      if (currentStage >= totalStages - 1) {
+        // Chapter complete!
+        setCompletedChapters(prev => [...prev, currentChapter]);
+        setShowChapterComplete(true);
+      } else {
+        // Move to next stage
+        setCurrentStage(prev => prev + 1);
+        setWrongAttempts(0); // Reset for new stage
+      }
+    } else {
+      // Wrong answer - increment attempts
+      setWrongAttempts(prev => prev + 1);
+    }
+  }, [currentStage, currentChapter, stage, totalStages]);
+
+  // Handle death - reset everything
+  const handleDeath = useCallback(() => {
+    setShowDeathScreen(true);
+    
+    // After showing death screen, reset to beginning
+    setTimeout(() => {
+      setCurrentChapter(1);
+      setCurrentStage(0);
+      setCompletedChapters([]);
+      setUnlockedDocuments([]);
+      setShowChapterComplete(false);
+      setWrongAttempts(0);
+      setShowDeathScreen(false);
+    }, 3000);
+  }, []);
+
+  // Handle next chapter
+  const handleNextChapter = useCallback(() => {
+    if (currentChapter < totalChapters) {
+      setCurrentChapter(prev => prev + 1);
+      setCurrentStage(0);
+      setShowChapterComplete(false);
+      setWrongAttempts(0); // Reset for new chapter
+    }
+  }, [currentChapter, totalChapters]);
+
+  // Handle restart
+  const handleRestart = useCallback(() => {
+    setCurrentChapter(1);
+    setCurrentStage(0);
+    setCompletedChapters([]);
+    setUnlockedDocuments([]);
+    setShowChapterComplete(false);
+    setWrongAttempts(0);
+    setShowDeathScreen(false);
+  }, []);
+
+  // Fetch chat messages
   const fetchMessages = useCallback(async () => {
     try {
       const res = await fetch(`/api/chat?_t=${Date.now()}`, { cache: 'no-store' });
@@ -283,54 +218,15 @@ const ObservePageContent: React.FC = () => {
         setChatEnabled(data.settings?.chatEnabled ?? true);
         setCooldownSeconds(data.settings?.cooldownSeconds ?? 5);
         setMaxLength(data.settings?.maxLength ?? 160);
-        setIsConnected(true);
+        setIsChatConnected(true);
       }
     } catch (err) {
       console.error('Fetch messages error:', err);
-      setIsConnected(false);
+      setIsChatConnected(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchSpecimenState();
-    fetchMessages();
-    fetchMarketCap();
-
-    const specimenInterval = setInterval(fetchSpecimenState, 3000); // 3 seconds
-    const chatInterval = setInterval(fetchMessages, 2000); // 2 seconds
-    const marketCapInterval = setInterval(fetchMarketCap, MARKET_CAP_POLL_INTERVAL); // 5 seconds
-
-    return () => {
-      clearInterval(specimenInterval);
-      clearInterval(chatInterval);
-      clearInterval(marketCapInterval);
-    };
-  }, [fetchSpecimenState, fetchMessages, fetchMarketCap]);
-
-  const handleUsernameSubmit = async (username: string) => {
-    if (!fingerprint) return { success: false, error: 'Fingerprint not generated' };
-
-    try {
-      const res = await fetch('/api/observers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, fingerprint }),
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        const obs = { id: data.observer.id, username: data.observer.username, fingerprint };
-        setStoredObserver(obs);
-        setObserver(obs);
-        setShowUsernameModal(false);
-        return { success: true };
-      }
-      return { success: false, error: data.error };
-    } catch (err) {
-      return { success: false, error: 'Registration failed' };
-    }
-  };
-
+  // Send chat message
   const handleSendMessage = async (message: string) => {
     if (!observer) return { success: false, error: 'Not registered' };
 
@@ -352,196 +248,292 @@ const ObservePageContent: React.FC = () => {
     }
   };
 
-  if (showLoadingScreen) {
-    return <LoadingScreen onComplete={() => setShowLoadingScreen(false)} />;
-  }
+  // Fetch chat on mount and interval
+  useEffect(() => {
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 2000);
+    return () => clearInterval(interval);
+  }, [fetchMessages]);
 
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0f0a]">
-        <div className="text-center">
-          <SpecimenIcon className="mx-auto mb-4 text-terminal-green animate-pulse" size={48} />
-          <div className="font-pixel text-xs text-terminal-green tracking-wider">
-            INITIALIZING PROTOCOL...
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0f0a]">
-        <div className="text-center">
-          <AlertIcon className="mx-auto mb-4 text-terminal-red" size={48} />
-          <div className="font-pixel text-xs text-terminal-red tracking-wider mb-4">PROTOCOL ERROR</div>
-          <p className="text-terminal-muted">{error}</p>
-        </div>
-      </div>
-    );
+  if (loading) {
+    return <LoadingScreen onComplete={() => {}} />;
   }
 
   return (
-    <div>
-      <section className="h-screen w-full relative flex flex-col overflow-hidden">
-        <video ref={videoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-0">
-          <source src="/bg.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-black/20 z-0" />
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
+      {/* Background effects */}
+      <div className="fixed inset-0 bg-gradient-to-b from-red-950/20 via-black to-black z-0" />
+      <div className="fixed inset-0 opacity-5 z-0" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)'
+      }} />
 
-        {/* Header */}
-        <header className="relative z-10 border-b border-terminal-green/30 bg-black/50 backdrop-blur-sm p-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <SpecimenIcon className="text-terminal-green" size={24} />
-              <h1 className="font-pixel text-sm text-terminal-green tracking-wider">CLAWPROTOCOL</h1>
-              
-              {/* Sound Toggle */}
-              <button
-                onClick={toggleSound}
-                className="flex items-center gap-1.5 px-2 py-1 bg-terminal-bg/50 border border-terminal-green/30 rounded text-xs text-terminal-green/70 hover:text-terminal-green hover:border-terminal-green/50 transition-all"
-                title={isMuted ? 'Unmute' : 'Mute'}
-              >
-                {isMuted ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                  </svg>
-                )}
-              </button>
-            </div>
+      {/* Header */}
+      <header className="relative z-10 border-b border-red-500/20 bg-black/80 backdrop-blur-sm sticky top-0">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🏝️</span>
+            <span className="font-pixel text-red-500 text-sm hidden sm:inline">ESCAPE THE ISLAND</span>
             
-            {/* Observer Name */}
-            {observer && (
-              <div className="hidden sm:flex items-center gap-2 text-terminal-muted text-sm">
-                <TerminalIcon size={14} />
-                <span>Observer: </span>
-                <span className="text-terminal-cyan">{observer.username}</span>
-              </div>
-            )}
-            
-            {/* Wallet Button */}
-            <WalletButton />
+            {/* Sound Toggle */}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className={`flex items-center gap-1.5 px-2 py-1 border rounded text-xs transition-all ${
+                soundEnabled 
+                  ? 'bg-red-500/20 border-red-500/50 text-red-400' 
+                  : 'bg-black/50 border-white/20 text-white/40'
+              }`}
+              title={soundEnabled ? 'Mute typing sound' : 'Enable typing sound'}
+            >
+              {soundEnabled ? '🔊' : '🔇'}
+            </button>
           </div>
-        </header>
-
-        {/* Live Feed Leaderboard */}
-        <div className="absolute top-20 left-4 z-20 w-[280px]">
-          <div className="bg-black/70 backdrop-blur-sm rounded-lg border border-terminal-green/30 p-3">
-            <LiveFeedLeaderboard />
-          </div>
+          {observer && (
+            <span className="text-white/40 text-xs hidden md:inline">
+              Survivor: <span className="text-red-400">{observer.username}</span>
+            </span>
+          )}
+          <WalletButton />
         </div>
+      </header>
 
-        {/* Tap to Feed Hint */}
-        {connected && (
-          <div className="absolute top-20 right-4 z-20">
-            <div className="bg-black/70 backdrop-blur-sm rounded-lg border border-terminal-green/30 px-3 py-2">
-              <p className="text-terminal-green text-xs font-pixel animate-pulse">
-                👆 TAP SPECIMEN TO FEED
-              </p>
+      {/* Main Content */}
+      <main className="relative z-10 max-w-6xl mx-auto px-4 py-6 md:py-10">
+        
+        {/* Death Screen Overlay */}
+        {showDeathScreen && (
+          <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+            <div className="text-center animate-pulse">
+              <div className="text-8xl mb-6">💀</div>
+              <h2 className="font-pixel text-4xl md:text-6xl text-red-500 mb-4">
+                YOU DIED
+              </h2>
+              <p className="text-red-400/80 text-lg mb-2">They caught you.</p>
+              <p className="text-red-400/60 text-sm mb-8">All progress lost...</p>
+              <div className="w-48 h-1 bg-red-900 rounded-full mx-auto overflow-hidden">
+                <div className="h-full bg-red-500 animate-[shrink_3s_linear]" />
+              </div>
+              <p className="text-white/30 text-xs mt-4">Restarting...</p>
             </div>
+            <style jsx>{`
+              @keyframes shrink {
+                from { width: 100%; }
+                to { width: 0%; }
+              }
+            `}</style>
           </div>
         )}
 
-        {/* Specimen - Clickable area */}
-        <div 
-          className="flex-1 flex items-center justify-center relative z-10 cursor-pointer"
-          onClick={handleSpecimenTap}
-        >
-          {currentStage && specimenState && (
-            <SpecimenRenderer
-              stage={currentStage}
-              progress={specimenState.evolution_progress}
-              isEvolving={isEvolving}
-            />
-          )}
-          
-          {/* Floating +1 animations */}
-          <FloatingPoints points={floatingPoints} />
-          
-          {/* Connect wallet overlay if not connected */}
-          {!connected && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
-              <div className="text-center">
-                <p className="text-white/60 text-sm mb-2">Connect wallet to feed the specimen</p>
-                <p className="text-terminal-green/60 text-xs">Click anywhere to connect</p>
-              </div>
+        {/* Game Complete Screen */}
+        {isGameComplete ? (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-black/60 border border-green-500/30 rounded-xl p-8 text-center">
+              <div className="text-6xl mb-4">🏆</div>
+              <h2 className="font-pixel text-3xl text-green-400 mb-4">
+                YOU ESCAPED!
+              </h2>
+              <p className="text-white/70 mb-2">
+                Chapters Completed: <span className="text-green-400 font-bold">{completedChapters.length}</span> / {totalChapters}
+              </p>
+              <p className="text-white/70 mb-6">
+                Documents Unlocked: <span className="text-amber-400 font-bold">{unlockedDocuments.length}</span>
+              </p>
+              <p className="text-white/50 text-sm mb-8">
+                You've escaped the island with the evidence. The truth will be exposed. 
+                The blockchain never forgets.
+              </p>
+              <button
+                onClick={handleRestart}
+                className="px-8 py-3 bg-red-500/20 border border-red-500/50 text-red-400 font-pixel rounded-lg hover:bg-red-500/30 transition-all"
+              >
+                🔄 PLAY AGAIN
+              </button>
             </div>
-          )}
-        </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce z-10">
-          <span className="text-terminal-green/70 text-xs font-pixel">SCROLL</span>
-          <svg className="w-6 h-6 text-terminal-green/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </div>
-      </section>
-
-      {/* Evolution HUD & Chat Section */}
-      <section className="w-full bg-[#0a0f0a] py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              {specimenState && currentStage && (
-                <EvolutionHUD state={specimenState} stage={currentStage} nextStage={nextStage} />
-              )}
-            </div>
-            <div className="h-[450px]">
-              <ChatConsole
-                messages={messages}
-                onSendMessage={handleSendMessage}
-                isConnected={isConnected}
-                username={observer?.username || null}
-                cooldownSeconds={cooldownSeconds}
-                maxLength={maxLength}
-                chatEnabled={chatEnabled}
+            {/* Show Vault at the end */}
+            <div className="mt-8">
+              <Vault 
+                completedChapters={completedChapters.length} 
+                isVisible={true} 
               />
             </div>
           </div>
-        </div>
-      </section>
+        ) : showChapterComplete ? (
+          /* Chapter Complete Screen */
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-black/60 border border-green-500/30 rounded-xl p-8 text-center">
+              <div className="text-5xl mb-4">✅</div>
+              <h2 className="font-pixel text-2xl text-green-400 mb-2">
+                {chapter.title} COMPLETE
+              </h2>
+              <p className="text-white/50 text-lg mb-6">
+                "{chapter.subtitle}"
+              </p>
+              <p className="text-white/70 mb-6">
+                You completed all 6 stages! 
+                {currentChapter < totalChapters ? ' Ready for the next chapter?' : ' You did it!'}
+              </p>
+              
+              {currentChapter < totalChapters ? (
+                <button
+                  onClick={handleNextChapter}
+                  className="px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-pixel text-lg rounded-xl transition-all shadow-lg shadow-red-500/20"
+                >
+                  CONTINUE TO CHAPTER {currentChapter + 1} →
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setCompletedChapters(prev => [...prev, currentChapter]);
+                    setShowChapterComplete(false);
+                  }}
+                  className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-pixel text-lg rounded-xl transition-all shadow-lg shadow-green-500/20"
+                >
+                  🏆 COMPLETE GAME
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Active Game */
+          <>
+            {/* Progress Bar */}
+            <div className="mb-8 max-w-2xl mx-auto">
+              <ProgressBar 
+                currentStage={currentStage}
+                totalStages={totalStages}
+                currentChapter={currentChapter}
+                totalChapters={totalChapters}
+                chapterTitle={chapter.subtitle}
+              />
+            </div>
 
-      {/* DexChart Section */}
-      <section className="w-full bg-[#0a0f0a] py-8 border-t border-terminal-border/30">
-        <div className="max-w-7xl mx-auto px-4">
-          <DexChart tokenAddress={TOKEN_ADDRESS} chainId={CHAIN_ID} />
-        </div>
-      </section>
+            {/* Chapter Header */}
+            <div className="text-center mb-6">
+              <span className="text-red-500/60 text-xs font-pixel tracking-widest">
+                {chapter.title}
+              </span>
+              
+              {/* Chapter Image */}
+              <div className="my-4 flex justify-center">
+                <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-lg overflow-hidden border border-red-500/20 bg-black/50">
+                  {/* Placeholder - replace src with actual chapter images */}
+                  <img 
+                    src={`/images/chapter-${currentChapter}.png`}
+                    alt={chapter.subtitle}
+                    className="w-full h-full object-cover opacity-80"
+                    onError={(e) => {
+                      // Fallback to ASCII art style placeholder
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  {/* ASCII Art Fallback */}
+                  <div className="hidden absolute inset-0 flex items-center justify-center bg-black/80 font-mono text-[4px] md:text-[5px] text-red-500/70 leading-none whitespace-pre overflow-hidden p-2">
+{`    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+    ░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░
+    ░░░░▓░░░░░░░░░░░░░░░░░░▓░░░░░░
+    ░░░░▓░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░▓░░░░░░
+    ░░░░▓░░▒░░░░░░░░░░░░▒░░▓░░░░░░
+    ░░░░▓░░▒░░████████░░▒░░▓░░░░░░
+    ░░░░▓░░▒░░█CLASSIFIED█░░▒░░▓░░░░░░
+    ░░░░▓░░▒░░████████░░▒░░▓░░░░░░
+    ░░░░▓░░▒░░░░░░░░░░░░▒░░▓░░░░░░
+    ░░░░▓░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░▓░░░░░░
+    ░░░░▓░░░░░░░░░░░░░░░░░░▓░░░░░░
+    ░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░
+    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░`}
+                  </div>
+                  {/* Scanline effect */}
+                  <div className="absolute inset-0 pointer-events-none opacity-30" style={{
+                    backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)'
+                  }} />
+                  {/* Glow border */}
+                  <div className="absolute inset-0 border border-red-500/30 rounded-lg" style={{
+                    boxShadow: 'inset 0 0 20px rgba(239, 68, 68, 0.2)'
+                  }} />
+                </div>
+              </div>
+              
+              <h1 className="font-pixel text-2xl md:text-4xl text-white mt-2">
+                {chapter.subtitle}
+              </h1>
+            </div>
+
+            {/* Stage Display */}
+            <div className="max-w-3xl mx-auto mb-6">
+              {stage && (
+                <StageDisplay
+                  key={`${currentChapter}-${currentStage}-${wrongAttempts}`}
+                  stage={stage}
+                  stageNumber={currentStage + 1}
+                  onAnswer={handleAnswer}
+                  onDeath={handleDeath}
+                  soundEnabled={soundEnabled}
+                  wrongAttempts={wrongAttempts}
+                  maxWrongAttempts={maxWrongAttempts}
+                />
+              )}
+            </div>
+
+            {/* Chat Section */}
+            <div className="max-w-3xl mx-auto">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-red-400 text-xs font-pixel">💬 SURVIVOR CHAT</span>
+                <span className="text-white/30 text-xs">Discuss strategies</span>
+                {isChatConnected && (
+                  <span className="ml-auto flex items-center gap-1 text-green-400/60 text-xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    LIVE
+                  </span>
+                )}
+              </div>
+              <div className="h-[250px] bg-black/50 border border-red-500/20 rounded-xl overflow-hidden">
+                <ChatConsole
+                  messages={messages}
+                  onSendMessage={handleSendMessage}
+                  isConnected={isChatConnected}
+                  username={observer?.username || null}
+                  cooldownSeconds={cooldownSeconds}
+                  maxLength={maxLength}
+                  chatEnabled={chatEnabled}
+                />
+              </div>
+            </div>
+
+            {/* The Vault - Shows progress */}
+            <div className="mt-8">
+              <Vault 
+                completedChapters={completedChapters.length} 
+                isVisible={true} 
+              />
+            </div>
+          </>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-white/5 py-6 text-center">
+        <p className="text-white/20 text-xs font-pixel">
+          🏝️ ESCAPE THE ISLAND • 8 CHAPTERS • 6 STAGES EACH • SURVIVE
+        </p>
+      </footer>
 
       {/* Username Modal */}
-      <UsernameModal isOpen={showUsernameModal} onSubmit={handleUsernameSubmit} canClose={false} />
-
-      {/* Float up animation style */}
-      <style jsx global>{`
-        @keyframes float-up {
-          0% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(-60px) scale(1.5);
-          }
-        }
-        .animate-float-up {
-          animation: float-up 1s ease-out forwards;
-        }
-      `}</style>
+      <UsernameModal 
+        isOpen={showUsernameModal} 
+        onSubmit={handleUsernameSubmit} 
+        canClose={false} 
+      />
     </div>
   );
 };
 
-// Main Page with Wallet Provider
-export default function ObservePage() {
+// Export with Wallet Provider
+export default function GamePage() {
   return (
     <WalletProvider>
-      <ObservePageContent />
+      <GameContent />
     </WalletProvider>
   );
 }
