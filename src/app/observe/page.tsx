@@ -15,7 +15,7 @@ import {
 import type { SpecimenState, EvolutionStage, ChatMessage } from '@/types';
 
 // Token address for DexScreener
-const TOKEN_ADDRESS = '';
+const TOKEN_ADDRESS = 'GoctGHWWBViKRKKUoqQrVvrK3JQdvo1KTEQE1CSopump';
 const CHAIN_ID = 'solana';
 const MARKET_CAP_POLL_INTERVAL = 5000; // 5 seconds
 

@@ -223,7 +223,7 @@ const GlitchText: React.FC<{ text: string; className?: string }> = ({ text, clas
 // CA Section Component
 const CASection: React.FC<{ show: boolean }> = ({ show }) => {
   const [copied, setCopied] = useState(false);
-  const CA_ADDRESS = ''; // Replace with actual CA
+  const CA_ADDRESS = 'GoctGHWWBViKRKKUoqQrVvrK3JQdvo1KTEQE1CSopump'; // Replace with actual CA
 
   const handleCopy = async () => {
     try {
