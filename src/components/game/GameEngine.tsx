@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BranchingChapter, StoryNode, BranchingChoice, GameState } from './types';
 import { StoryNodeDisplay } from './StoryNodeDisplay';
-import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6 } from './chapters';
+import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5} from './chapters';
 
 // All chapters (branching system)
 const CHAPTERS: Record<number, BranchingChapter> = {
@@ -12,7 +12,6 @@ const CHAPTERS: Record<number, BranchingChapter> = {
   3: CHAPTER_3,
   4: CHAPTER_4,
   5: CHAPTER_5,
-  6: CHAPTER_6,
 };
 
 const TOTAL_CHAPTERS = 6;
