@@ -263,6 +263,20 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         </div>
       )}
 
+      {/* Reset Game Button */}
+      <div className="mt-6 pt-4 border-t border-white/10">
+        <button
+          onClick={() => {
+            if (confirm('Reset all progress? This cannot be undone.')) {
+              resetGame();
+            }
+          }}
+          className="w-full px-4 py-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-xs font-pixel hover:bg-red-500/20 transition-colors"
+        >
+          🔄 RESET GAME (Start Over)
+        </button>
+      </div>
+
       {/* Path history (debug/development) */}
       {process.env.NODE_ENV === 'development' && (
         <details className="mt-4">

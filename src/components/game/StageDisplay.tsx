@@ -37,8 +37,8 @@ const StageTimer: React.FC<{
     return () => clearInterval(interval);
   }, [running, onEnd, timeLeft]);
 
-  const isUrgent = timeLeft < 60;
-  const isCritical = timeLeft < 30;
+  const isUrgent = timeLeft < 30;
+  const isCritical = timeLeft < 10;
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
 
@@ -506,9 +506,14 @@ export const StageDisplay: React.FC<StageDisplayProps> = ({
           {/* Timer */}
           {!answerResult && (
             <div className="mt-6 flex flex-col items-center gap-3">
+              {/* 
+                ⏱️ TIMER SETTING - Change the seconds value below:
+                - Testing: 10 seconds
+                - Production: 300 seconds (5 minutes)
+              */}
               <StageTimer 
                 key={timerKey}
-                seconds={300} 
+                seconds={10} // ← CHANGE THIS: 10 for testing, 300 for production
                 running={!answerResult && showQuestion} 
                 onEnd={handleTimeUp}
               />
