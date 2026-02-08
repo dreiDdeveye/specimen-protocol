@@ -14,6 +14,7 @@ interface VaultFolder {
   }[];
 }
 
+// Updated to match 6 chapters with correct unlock logic
 const VAULT_FOLDERS: VaultFolder[] = [
   {
     id: 'chapter-1',
@@ -24,83 +25,70 @@ const VAULT_FOLDERS: VaultFolder[] = [
     documents: [
       { title: 'Gala Invitation', pdfUrl: '/documents/gala-invitation.pdf' },
       { title: 'Missing Persons Report', pdfUrl: '/documents/missing-persons.pdf' },
+      { title: 'Guest Registry', pdfUrl: '/documents/guest-registry.pdf' },
     ],
   },
   {
     id: 'chapter-2',
     title: 'CHAPTER 2',
-    subtitle: 'The Tunnels',
+    subtitle: 'The Compound',
     color: '#f97316', // orange
     unlocksAtChapter: 2,
     documents: [
       { title: 'Island Map', pdfUrl: '/documents/island-map.pdf' },
       { title: 'Security Protocols', pdfUrl: '/documents/security-protocols.pdf' },
+      { title: 'Staff Records', pdfUrl: '/documents/staff-records.pdf' },
     ],
   },
   {
     id: 'chapter-3',
     title: 'CHAPTER 3',
-    subtitle: 'The Compound',
+    subtitle: 'The Escape',
     color: '#eab308', // yellow
     unlocksAtChapter: 3,
     documents: [
+      { title: 'Boat Registrations', pdfUrl: '/documents/boat-registrations.pdf' },
+      { title: 'Coast Guard Frequencies', pdfUrl: '/documents/coast-frequencies.pdf' },
       { title: 'Surveillance Log', pdfUrl: '/documents/surveillance-log.pdf' },
-      { title: 'Guest Registry', pdfUrl: '/documents/guest-registry.pdf' },
     ],
   },
   {
     id: 'chapter-4',
     title: 'CHAPTER 4',
-    subtitle: 'The Rescue',
+    subtitle: 'The Investigation',
     color: '#22c55e', // green
     unlocksAtChapter: 4,
     documents: [
       { title: 'Victim List', pdfUrl: '/documents/victim-list.pdf' },
-      { title: 'Staff Records', pdfUrl: '/documents/staff-records.pdf' },
+      { title: 'Witness Statements', pdfUrl: '/documents/witness-statements.pdf' },
+      { title: 'Witness Protection Files', pdfUrl: '/documents/witness-protection.pdf' },
+      { title: 'Pilot Depositions', pdfUrl: '/documents/pilot-depositions.pdf' },
     ],
   },
   {
     id: 'chapter-5',
     title: 'CHAPTER 5',
-    subtitle: 'The Ocean',
+    subtitle: 'The Trial',
     color: '#3b82f6', // blue
     unlocksAtChapter: 5,
     documents: [
-      { title: 'Coast Guard Frequencies', pdfUrl: '/documents/coast-frequencies.pdf' },
-      { title: 'Boat Registrations', pdfUrl: '/documents/boat-registrations.pdf' },
+      { title: 'Court Transcripts', pdfUrl: '/documents/court-transcripts.pdf' },
+      { title: 'Court Filing', pdfUrl: '/documents/court-filing-1.pdf' },
+      { title: 'Testimony Index', pdfUrl: '/documents/testimony-index.pdf' },
+      { title: 'Manifests', pdfUrl: '/documents/manifests.pdf' },
     ],
   },
   {
     id: 'chapter-6',
     title: 'CHAPTER 6',
-    subtitle: 'The Mainland',
+    subtitle: 'The Truth',
     color: '#8b5cf6', // purple
     unlocksAtChapter: 6,
     documents: [
-      { title: 'FBI Tipline Records', pdfUrl: '/documents/fbi-tipline.pdf' },
-      { title: 'Witness Statements', pdfUrl: '/documents/witness-statements.pdf' },
-    ],
-  },
-  {
-    id: 'chapter-7',
-    title: 'CHAPTER 7',
-    subtitle: 'The Investigation',
-    color: '#06b6d4', // cyan
-    unlocksAtChapter: 7,
-    documents: [
-      { title: 'Witness Protection Files', pdfUrl: '/documents/witness-protection.pdf' },
-      { title: 'Court Transcripts', pdfUrl: '/documents/court-transcripts.pdf' },
-    ],
-  },
-  {
-    id: 'chapter-8',
-    title: 'CHAPTER 8',
-    subtitle: 'The Truth',
-    color: '#dc2626', // dark red
-    unlocksAtChapter: 8,
-    documents: [
       { title: 'Flight Logs Complete', pdfUrl: '/documents/flight-logs-complete.pdf' },
-      { title: 'Black Book', pdfUrl: '/documents/black-book.pdf' },
+      { title: 'Flight Logs Part 1', pdfUrl: '/documents/flight-logs-1.pdf' },
+      { title: 'The Black Book Part 1', pdfUrl: '/documents/black-book-1.pdf' },
+      { title: 'The Black Book Part 2', pdfUrl: '/documents/black-book-2.pdf' },
       { title: 'Financial Records', pdfUrl: '/documents/financial-records.pdf' },
     ],
   },
@@ -416,7 +404,7 @@ const DocumentModal: React.FC<{
 
 // Main Vault Component
 interface VaultProps {
-  completedChapters: number;
+  completedChapters: number; // This should be the highest chapter NUMBER completed (1-6)
   isVisible: boolean;
 }
 
@@ -425,7 +413,14 @@ export const Vault: React.FC<VaultProps> = ({ completedChapters, isVisible }) =>
   
   if (!isVisible) return null;
   
-  const unlockedCount = VAULT_FOLDERS.filter(f => f.unlocksAtChapter <= completedChapters).length;
+  // DEBUG: Log the value received
+  console.log('[Vault] completedChapters received:', completedChapters);
+  
+  // Ensure completedChapters is a valid number
+  const safeCompletedChapters = typeof completedChapters === 'number' ? completedChapters : 0;
+  
+  // Count unlocked folders - folder unlocks when completedChapters >= unlocksAtChapter
+  const unlockedCount = VAULT_FOLDERS.filter(f => safeCompletedChapters >= f.unlocksAtChapter).length;
   const totalFolders = VAULT_FOLDERS.length;
   
   return (
@@ -441,10 +436,12 @@ export const Vault: React.FC<VaultProps> = ({ completedChapters, isVisible }) =>
         </p>
       </div>
       
-      {/* Folders Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10 max-w-4xl mx-auto mb-10 px-4">
+      {/* Folders Grid - 3 columns on desktop for 6 folders */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-10 max-w-3xl mx-auto mb-10 px-4">
         {VAULT_FOLDERS.map((folder) => {
-          const isLocked = folder.unlocksAtChapter > completedChapters;
+          // Folder is locked if completedChapters is LESS than unlocksAtChapter
+          const isLocked = safeCompletedChapters < folder.unlocksAtChapter;
+          console.log(`[Vault] Folder ${folder.id}: unlocksAt=${folder.unlocksAtChapter}, completed=${safeCompletedChapters}, isLocked=${isLocked}`);
           return (
             <FolderCard
               key={folder.id}

@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StoryNode, BranchingChoice } from './types';
 
-// Timer Component
-const StoryTimer: React.FC<{
+// Timer Component - Standalone for positioning outside
+export const StoryTimer: React.FC<{
   seconds: number;
   running: boolean;
   onEnd: () => void;
@@ -48,7 +48,7 @@ const StoryTimer: React.FC<{
         ? 'bg-red-500/30 border-red-500 animate-pulse shadow-lg shadow-red-500/30' 
         : isUrgent
         ? 'bg-red-500/20 border-red-500/70'
-        : 'bg-black/50 border-red-500/30'
+        : 'bg-black/70 border-red-500/30'
     }`}>
       <span className={`text-[10px] font-pixel tracking-wider ${
         isCritical ? 'text-red-400' : 'text-white/40'
@@ -120,7 +120,6 @@ const useTypingSound = (enabled: boolean = true) => {
     try {
       const time = ctx.currentTime;
       
-      // Key strike
       const strikeOsc = ctx.createOscillator();
       strikeOsc.type = 'square';
       strikeOsc.frequency.setValueAtTime(150 + Math.random() * 50, time);
@@ -130,7 +129,6 @@ const useTypingSound = (enabled: boolean = true) => {
       strikeGain.gain.setValueAtTime(0.25, time);
       strikeGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
       
-      // Hammer hit
       const hammerOsc = ctx.createOscillator();
       hammerOsc.type = 'sine';
       hammerOsc.frequency.setValueAtTime(4000 + Math.random() * 800, time);
@@ -140,7 +138,6 @@ const useTypingSound = (enabled: boolean = true) => {
       hammerGain.gain.setValueAtTime(0.08, time);
       hammerGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
       
-      // Noise burst
       const noiseLength = 0.03;
       const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * noiseLength, ctx.sampleRate);
       const noiseData = noiseBuffer.getChannelData(0);
@@ -194,36 +191,7 @@ const useTypingSound = (enabled: boolean = true) => {
   return playClick;
 };
 
-// Document Card Component
-const DocumentCard: React.FC<{
-  title: string;
-  preview: string;
-  pdfUrl: string;
-}> = ({ title, preview, pdfUrl }) => (
-  <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg animate-fadeIn">
-    <div className="flex items-start gap-3">
-      <div className="p-2 bg-red-500/20 rounded-lg shrink-0">
-        <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" strokeWidth="2" />
-          <polyline points="14,2 14,8 20,8" strokeWidth="2" />
-        </svg>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-red-400 font-pixel text-xs mb-1">EVIDENCE UNLOCKED</p>
-        <p className="text-white text-sm font-mono truncate">{title}</p>
-        <p className="text-white/40 text-xs mt-1">{preview}</p>
-        <button
-          onClick={() => window.open(pdfUrl, '_blank')}
-          className="mt-2 px-3 py-1.5 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-xs font-pixel hover:bg-red-500/30 transition-all"
-        >
-          VIEW DOCUMENT →
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
-// Main Story Node Display Component
+// Main Story Node Display Component - NEW OVERLAY LAYOUT
 interface StoryNodeDisplayProps {
   node: StoryNode;
   onChoice: (choice: BranchingChoice) => void;
@@ -231,6 +199,7 @@ interface StoryNodeDisplayProps {
   onDeath: () => void;
   onChapterComplete: (nextChapter: number) => void;
   soundEnabled?: boolean;
+  stageImage: string; // Pass the stage image URL
 }
 
 export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
@@ -240,15 +209,16 @@ export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
   onDeath,
   onChapterComplete,
   soundEnabled = true,
+  stageImage,
 }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [showChoices, setShowChoices] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState<BranchingChoice | null>(null);
   const [showConsequence, setShowConsequence] = useState(false);
-  const [showDocument, setShowDocument] = useState(false);
   const [timerKey, setTimerKey] = useState(0);
   const [waitingForTimer, setWaitingForTimer] = useState(false);
+  const [timerRunning, setTimerRunning] = useState(false);
 
   const playTypeSound = useTypingSound(soundEnabled);
 
@@ -259,8 +229,8 @@ export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
     setShowChoices(false);
     setSelectedChoice(null);
     setShowConsequence(false);
-    setShowDocument(false);
     setWaitingForTimer(false);
+    setTimerRunning(false);
     setTimerKey(prev => prev + 1);
   }, [node.id]);
 
@@ -283,14 +253,12 @@ export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
       } else {
         setIsTyping(false);
         
-        // Show document if exists
-        if (node.document) {
-          setTimeout(() => setShowDocument(true), 300);
-        }
-        
         // Show choices after text completes (for choice nodes)
         if (node.type === 'choice' && node.choices) {
-          setTimeout(() => setShowChoices(true), 500);
+          setTimeout(() => {
+            setShowChoices(true);
+            setTimerRunning(true);
+          }, 500);
         }
         
         // Auto-continue for narrative nodes
@@ -319,7 +287,7 @@ export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
     };
   }, [node, soundEnabled, playTypeSound, onContinue, onDeath, onChapterComplete]);
 
-  // Handle choice selection - locks in but waits for timer
+  // Handle choice selection
   const handleChoiceSelect = (choice: BranchingChoice) => {
     if (selectedChoice || waitingForTimer) return;
     
@@ -331,16 +299,14 @@ export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
     }
   };
 
-  // Handle timer end - proceed with chosen choice
+  // Handle timer end
   const handleTimerEnd = useCallback(() => {
     if (selectedChoice) {
-      // Choice was made, proceed to next node
       setWaitingForTimer(false);
       setTimeout(() => {
         onChoice(selectedChoice);
       }, 500);
     } else if (node.choices && node.choices.length > 0) {
-      // No choice made - auto-select first choice (or random)
       const defaultChoice = node.choices[0];
       setSelectedChoice(defaultChoice);
       setShowConsequence(true);
@@ -350,133 +316,163 @@ export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
     }
   }, [selectedChoice, node.choices, onChoice]);
 
-  // Determine node type styling
-  const getBorderStyle = () => {
-    switch (node.type) {
-      case 'death':
-        return 'border-red-500/70 bg-red-900/20';
-      case 'chapter-end':
-        return 'border-green-500/50 bg-green-900/10';
-      case 'victory':
-        return 'border-amber-500/50 bg-amber-900/10';
-      default:
-        return 'border-white/10';
-    }
-  };
+  // Images that have the TV frame (need special positioning)
+  // All other images will use simple bottom overlay
+  const TV_FRAME_IMAGES = [
+    '/C1/C1S1.jpg',
+    '/C1/C1S2.jpg',
+    '/C1/C1S2-door.jpg',
+    '/C1/C1S2-Cot.jpg',
+    '/C1/C1S2%20VENT.jpg',
+    '/C1/C1S3.jpg',
+    '/C1/C1S3-earrings.jpg',
+    '/C1/C1S3-death.jpg',
+    '/C1/C1S4.jpg',
+    '/C1/C1S4-pretend.jpg',
+    // C2 with TV frames (add any that have TV)
+    '/C2/C2S1.jpg',
+    '/C2/C2S1-MARINA.jpg',
+    '/C2/C2S1-death.jpg',
+  ];
+
+  const hasTVFrame = TV_FRAME_IMAGES.includes(stageImage);
 
   return (
-    <div className={`bg-black/60 backdrop-blur-sm border rounded-xl p-5 md:p-8 relative overflow-hidden ${getBorderStyle()}`}>
-      {/* Death overlay */}
-      {node.type === 'death' && (
-        <div className="absolute top-0 left-0 right-0 bg-red-500/20 border-b border-red-500/30 px-4 py-2 flex items-center justify-center gap-2">
-          <span className="text-red-500 text-lg">💀</span>
-          <span className="text-red-400 text-sm font-pixel">DEATH</span>
-        </div>
-      )}
-      
-      {/* Chapter complete overlay */}
-      {node.type === 'chapter-end' && (
-        <div className="absolute top-0 left-0 right-0 bg-green-500/20 border-b border-green-500/30 px-4 py-2 flex items-center justify-center gap-2">
-          <span className="text-green-500 text-lg">✓</span>
-          <span className="text-green-400 text-sm font-pixel">CHAPTER COMPLETE</span>
-        </div>
-      )}
-      
-      {/* Atmosphere effect */}
-      <div className={`absolute inset-0 pointer-events-none ${
-        node.type === 'death' 
-          ? 'bg-gradient-to-b from-red-900/30 to-transparent' 
-          : node.type === 'chapter-end'
-          ? 'bg-gradient-to-b from-green-900/20 to-transparent'
-          : 'bg-gradient-to-b from-red-900/5 to-transparent'
-      }`} />
-      
-      {/* Node ID indicator (for debugging/reference) */}
-      <div className={`flex items-center gap-2 mb-4 ${node.type === 'death' || node.type === 'chapter-end' ? 'mt-6' : ''}`}>
-        <span className="text-red-400/40 text-xs font-pixel">{node.id.toUpperCase()}</span>
-        <div className="flex-1 h-px bg-white/10" />
-      </div>
-
-      {/* Story text */}
-      <div className="relative z-10 mb-6">
-        <p className={`leading-relaxed font-mono text-sm md:text-base ${
-          node.type === 'death' ? 'text-red-300/90' : 
-          node.type === 'chapter-end' ? 'text-green-300/90' :
-          'text-white/90'
-        }`}>
-          {displayedText}
-          {isTyping && <span className="text-red-500 animate-pulse ml-0.5">▊</span>}
+    <div className="space-y-4">
+      {/* Timer hint - Above timer */}
+      {node.type === 'choice' && !node.noTimer && !selectedChoice && showChoices && (
+        <p className="text-white/30 text-xs text-center">
+          Choose before time runs out, or the first option will be selected
         </p>
+      )}
+
+      {/* TIMER - Above TV but closer */}
+      {node.type === 'choice' && !node.noTimer && (
+        <div className="flex justify-center -mb-2">
+          <StoryTimer 
+            key={timerKey}
+            seconds={node.timerSeconds || 300} 
+            running={timerRunning} 
+            onEnd={handleTimerEnd}
+          />
+        </div>
+      )}
+
+      {/* IMAGE with Story Overlay */}
+      <div className="relative w-full max-w-3xl mx-auto">
+        {/* Stage Image */}
+        <img 
+          src={stageImage}
+          alt="Stage"
+          className="w-full h-auto"
+        />
+        
+        {hasTVFrame ? (
+          /* TV FRAME LAYOUT - Text positioned inside TV screen */
+          <div 
+            className="absolute overflow-hidden"
+            style={{
+              top: '8%',
+              bottom: '35%',
+              left: '8%',
+              right: '8%',
+            }}
+          >
+            <div className="absolute inset-0 flex flex-col justify-end p-2 md:p-3">
+              <p className={`text-[10px] md:text-xs leading-relaxed font-mono ${
+                node.type === 'death' ? 'text-red-300' : 
+                node.type === 'chapter-end' ? 'text-green-300' :
+                'text-white'
+              }`} style={{ textShadow: '0 0 8px rgba(0,0,0,1), 0 0 16px rgba(0,0,0,0.8)' }}>
+                {displayedText}
+                {isTyping && <span className="text-red-500 animate-pulse ml-0.5">▊</span>}
+              </p>
+
+              {node.type === 'death' && node.deathMessage && !isTyping && (
+                <p className="text-red-400 text-[10px] mt-1 animate-fadeIn" style={{ textShadow: '0 0 8px rgba(0,0,0,1)' }}>
+                  💀 {node.deathMessage}
+                </p>
+              )}
+
+              {node.type === 'chapter-end' && node.chapterComplete && !isTyping && (
+                <p className="text-green-400 text-[10px] mt-1 animate-fadeIn" style={{ textShadow: '0 0 8px rgba(0,0,0,1)' }}>
+                  🏆 CHAPTER {node.chapterComplete.chapter} COMPLETE
+                </p>
+              )}
+
+              {node.type === 'narrative' && !isTyping && (
+                <p className="text-white/60 text-[9px] font-pixel animate-pulse mt-1">
+                  Continuing...
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* NO TV FRAME LAYOUT - Text at bottom with gradient */
+          <div className="absolute inset-0 flex flex-col justify-end">
+            {/* Gradient overlay for readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+            
+            <div className="relative z-10 p-4 md:p-6">
+              <p className={`text-sm md:text-base leading-relaxed font-mono ${
+                node.type === 'death' ? 'text-red-300' : 
+                node.type === 'chapter-end' ? 'text-green-300' :
+                'text-white'
+              }`} style={{ textShadow: '1px 1px 2px rgba(0,0,0,1)' }}>
+                {displayedText}
+                {isTyping && <span className="text-red-500 animate-pulse ml-0.5">▊</span>}
+              </p>
+
+              {node.type === 'death' && node.deathMessage && !isTyping && (
+                <p className="text-red-400 text-sm mt-2 animate-fadeIn">
+                  💀 {node.deathMessage}
+                </p>
+              )}
+
+              {node.type === 'chapter-end' && node.chapterComplete && !isTyping && (
+                <p className="text-green-400 text-sm mt-2 animate-fadeIn">
+                  🏆 CHAPTER {node.chapterComplete.chapter} COMPLETE
+                </p>
+              )}
+
+              {node.type === 'narrative' && !isTyping && (
+                <p className="text-white/60 text-xs font-pixel animate-pulse mt-2">
+                  Continuing...
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Death message */}
-      {node.type === 'death' && node.deathMessage && !isTyping && (
-        <div className="mt-4 p-4 bg-red-900/50 border-2 border-red-500 rounded-lg text-center animate-fadeIn">
-          <p className="text-2xl mb-2">💀</p>
-          <p className="text-red-400 font-pixel text-lg mb-2">YOU DIED</p>
-          <p className="text-red-400/80 text-sm">{node.deathMessage}</p>
-          <p className="text-red-400/60 text-xs mt-3">Restarting...</p>
-        </div>
-      )}
-
-      {/* Chapter complete message */}
-      {node.type === 'chapter-end' && node.chapterComplete && !isTyping && (
-        <div className="mt-4 p-4 bg-green-900/30 border border-green-500/50 rounded-lg text-center animate-fadeIn">
-          <p className="text-2xl mb-2">🏆</p>
-          <p className="text-green-400 font-pixel text-lg mb-2">
-            CHAPTER {node.chapterComplete.chapter} COMPLETE
-          </p>
-          <p className="text-green-400/80 text-sm">{node.chapterComplete.summary}</p>
-          <p className="text-green-400/60 text-xs mt-3">
-            Loading Chapter {node.chapterComplete.nextChapter}...
-          </p>
-        </div>
-      )}
-
-      {/* Document unlock */}
-      {showDocument && node.document && (
-        <DocumentCard
-          title={node.document.title}
-          preview={node.document.preview}
-          pdfUrl={node.document.pdfUrl}
-        />
-      )}
-
-      {/* Question and choices */}
+      {/* CHOICES - Below TV */}
       {showChoices && node.type === 'choice' && node.choices && (
-        <div className="relative z-10 animate-fadeIn">
+        <div className="max-w-2xl mx-auto space-y-3 animate-fadeIn">
           {/* Question */}
           {node.question && (
-            <div className="mb-4 p-3 bg-white/5 border border-white/10 rounded-lg">
-              <p className="text-amber-400 text-sm font-medium">{node.question}</p>
+            <div className="p-3 bg-white/5 border border-white/10 rounded-lg">
+              <p className="text-amber-400 text-sm font-medium text-center">{node.question}</p>
             </div>
           )}
 
-          {/* Choices */}
+          {/* Choice buttons */}
           <div className="grid gap-2">
             {node.choices.map((choice) => {
               const isSelected = selectedChoice?.id === choice.id;
               const isLocked = waitingForTimer && selectedChoice !== null;
               
-              let buttonClass = 'w-full p-3 text-left rounded-lg border transition-all text-sm ';
-              
-              if (!isLocked) {
-                // Can click
-                buttonClass += 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-amber-500/50 text-white/80 cursor-pointer';
-              } else if (isSelected) {
-                // Selected, waiting for timer
-                buttonClass += 'bg-amber-500/20 border-amber-500 text-amber-400';
-              } else {
-                // Other choices while waiting
-                buttonClass += 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed';
-              }
-
               return (
                 <button
                   key={choice.id}
                   onClick={() => handleChoiceSelect(choice)}
                   disabled={isLocked}
-                  className={buttonClass}
+                  className={`w-full p-3 text-left rounded-lg border transition-all text-sm ${
+                    !isLocked 
+                      ? 'bg-black/60 border-white/20 hover:bg-white/10 hover:border-amber-500/50 text-white/80 cursor-pointer'
+                      : isSelected
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-400'
+                      : 'bg-black/40 border-white/10 text-white/30 cursor-not-allowed'
+                  }`}
                 >
                   <span className="flex items-center gap-3">
                     <span className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-bold shrink-0">
@@ -484,13 +480,7 @@ export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
                     </span>
                     <span className="flex-1">{choice.text}</span>
                     {isLocked && isSelected && (
-                      <span className="flex items-center gap-1 text-amber-400">
-                        <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" strokeWidth="2" />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" strokeWidth="2" />
-                        </svg>
-                        <span className="text-xs">LOCKED</span>
-                      </span>
+                      <span className="text-amber-400 text-xs">✓ LOCKED</span>
                     )}
                   </span>
                 </button>
@@ -500,45 +490,21 @@ export const StoryNodeDisplay: React.FC<StoryNodeDisplayProps> = ({
 
           {/* Consequence text */}
           {showConsequence && selectedChoice?.consequence && (
-            <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-center animate-fadeIn">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-center animate-fadeIn">
               <p className="text-amber-400/80 text-sm italic">{selectedChoice.consequence}</p>
             </div>
           )}
 
-          {/* Timer */}
-          {!node.noTimer && (
-            <div className="mt-6 flex flex-col items-center gap-3">
-              <StoryTimer 
-                key={timerKey}
-                seconds={node.timerSeconds || 300} 
-                running={showChoices} 
-                onEnd={handleTimerEnd}
-              />
-              {waitingForTimer && (
-                <div className="text-amber-400 text-xs font-pixel animate-pulse flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                    <path strokeLinecap="round" strokeWidth="2" d="M12 6v6l4 2" />
-                  </svg>
-                  CHOICE LOCKED - WAITING FOR TIMER
-                </div>
-              )}
-              {!selectedChoice && (
-                <p className="text-white/30 text-xs text-center">
-                  Choose before time runs out, or the first option will be selected
-                </p>
-              )}
+          {/* Waiting indicator */}
+          {waitingForTimer && (
+            <div className="text-amber-400 text-xs font-pixel animate-pulse text-center flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                <path strokeLinecap="round" strokeWidth="2" d="M12 6v6l4 2" />
+              </svg>
+              CHOICE LOCKED - WAITING FOR TIMER
             </div>
           )}
-        </div>
-      )}
-
-      {/* Continue prompt for narrative nodes */}
-      {node.type === 'narrative' && !isTyping && (
-        <div className="mt-6 text-center animate-fadeIn">
-          <p className="text-white/40 text-xs font-pixel animate-pulse">
-            Continuing...
-          </p>
         </div>
       )}
 

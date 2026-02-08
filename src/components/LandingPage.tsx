@@ -936,6 +936,60 @@ export default function LandingPage() {
               </p>
             </div>
 
+            {/* Archives Image with Impact Effect */}
+            <div className="max-w-2xl mx-auto mb-16 relative">
+              <div className="relative group">
+                {/* Impact rings - animate on load */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="absolute w-full h-full rounded-full border-2 border-red-500/30 animate-ping" style={{ animationDuration: '2s' }} />
+                  <div className="absolute w-4/5 h-4/5 rounded-full border-2 border-terminal-amber/30 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.2s' }} />
+                  <div className="absolute w-3/5 h-3/5 rounded-full border-2 border-white/30 animate-ping" style={{ animationDuration: '3s', animationDelay: '0.4s' }} />
+                </div>
+
+                {/* Main image with fall effect */}
+                <div className="relative animate-[fallImpact_1.5s_ease-out_forwards] opacity-0">
+                  <Image 
+                    src="/626996363_1229067122740153_7826042290044063227_n.jpg"
+                    alt="Archives Declassified"
+                    width={600}
+                    height={600}
+                    className="w-full h-auto rounded-lg shadow-2xl shadow-red-500/20 border border-red-500/30"
+                  />
+                  
+                  {/* Glitch overlay on hover */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    <div className="absolute inset-0 bg-red-500/10 mix-blend-multiply" style={{ clipPath: 'inset(0 0 50% 0)' }} />
+                    <div className="absolute inset-0 bg-terminal-amber/10 mix-blend-multiply" style={{ clipPath: 'inset(50% 0 0 0)' }} />
+                  </div>
+                </div>
+
+                {/* Text overlays */}
+                <div className="absolute top-6 left-6 animate-[slideInLeft_1s_ease-out_0.5s_forwards] opacity-0">
+                  <div className="bg-black/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-red-500/50">
+                    <div className="font-pixel text-red-400 text-xs mb-1">DECLASSIFIED</div>
+                    <div className="text-white/90 text-sm">THE ARCHIVES</div>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-6 right-6 animate-[slideInRight_1s_ease-out_0.7s_forwards] opacity-0">
+                  <div className="bg-black/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-terminal-amber/50">
+                    <div className="text-white/90 text-sm font-semibold">SEALED NO MORE</div>
+                    <div className="text-terminal-amber text-xs font-pixel">1000+ DOCUMENTS</div>
+                  </div>
+                </div>
+
+                {/* Corner stamps */}
+                <div className="absolute top-6 right-6 transform rotate-12 animate-[stamp_0.5s_ease-out_1.2s_forwards] opacity-0">
+                  <div className="border-4 border-red-500 text-red-500 font-pixel text-xs px-3 py-2 rounded-lg bg-black/50 backdrop-blur-sm">
+                    CLASSIFIED
+                  </div>
+                </div>
+              </div>
+
+              {/* Crack effect at bottom */}
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-64 h-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent animate-[expandWidth_0.8s_ease-out_1.5s_forwards] origin-center scale-x-0" />
+            </div>
+
             <div className="max-w-4xl mx-auto">
               <div className="terminal-panel p-8 md:p-12 relative overflow-hidden bg-gradient-to-br from-terminal-surface/80 to-terminal-bg/80">
                 <div className="absolute left-8 md:left-12 top-24 bottom-24 w-px bg-gradient-to-b from-red-500 via-terminal-amber to-white" />
@@ -1077,6 +1131,75 @@ export default function LandingPage() {
           10% { opacity: 0.6; }
           90% { opacity: 0.6; }
           100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+        }
+
+        @keyframes fallImpact {
+          0% { 
+            transform: translateY(-200px) scale(0.5); 
+            opacity: 0; 
+          }
+          60% { 
+            transform: translateY(0) scale(1.05); 
+            opacity: 1; 
+          }
+          80% { 
+            transform: translateY(-10px) scale(0.98); 
+          }
+          100% { 
+            transform: translateY(0) scale(1); 
+            opacity: 1; 
+          }
+        }
+
+        @keyframes slideInLeft {
+          0% {
+            transform: translateX(-50px);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideInRight {
+          0% {
+            transform: translateX(50px);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes stamp {
+          0% {
+            transform: rotate(12deg) scale(0);
+            opacity: 0;
+          }
+          50% {
+            transform: rotate(8deg) scale(1.2);
+            opacity: 1;
+          }
+          100% {
+            transform: rotate(12deg) scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes expandWidth {
+          0% {
+            transform: translateX(-50%) scaleX(0);
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(-50%) scaleX(1);
+            opacity: 0.5;
+          }
         }
       `}</style>
     </div>

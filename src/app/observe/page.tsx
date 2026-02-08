@@ -10,6 +10,7 @@ import {
   type StoredObserver,
 } from '@/lib/utils';
 import type { ChatMessage } from '@/types';
+import Link from 'next/link';
 
 // Import NEW game components
 import { 
@@ -65,11 +66,15 @@ const GameContent: React.FC = () => {
   const [fingerprint, setFingerprint] = useState<string | null>(null);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
 
-  // Game State
-  const [completedChapters, setCompletedChapters] = useState<number[]>([]);
-  const [unlockedDocuments, setUnlockedDocuments] = useState<string[]>([]);
+  // Game State - completedChapters is a NUMBER (highest chapter completed)
+  const [completedChapters, setCompletedChapters] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isGameComplete, setIsGameComplete] = useState(false);
+
+  // Header scroll state
+  const [headerOpacity, setHeaderOpacity] = useState(1);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   // Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -77,6 +82,31 @@ const GameContent: React.FC = () => {
   const [cooldownSeconds, setCooldownSeconds] = useState(5);
   const [maxLength, setMaxLength] = useState(160);
   const [isChatConnected, setIsChatConnected] = useState(false);
+
+  // Handle scroll for header fade effect
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Calculate opacity based on scroll position (fade out over first 100px)
+      const newOpacity = Math.max(0, 1 - (currentScrollY / 150));
+      setHeaderOpacity(newOpacity);
+      
+      // Show/hide header based on scroll direction
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down & past threshold - hide header
+        setIsHeaderVisible(false);
+      } else {
+        // Scrolling up - show header
+        setIsHeaderVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   // Init observer
   useEffect(() => {
@@ -102,6 +132,37 @@ const GameContent: React.FC = () => {
     init();
   }, []);
 
+  // Load completed chapters from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('island-escape-save');
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+        setCompletedChapters(state.completedChapters || 0);
+      } catch (e) {
+        console.error('Failed to load save:', e);
+      }
+    }
+  }, []);
+
+  // Listen for game state updates from GameEngine
+  useEffect(() => {
+    const handleGameUpdate = (event: CustomEvent) => {
+      const { completedChapters: newCompleted } = event.detail;
+      setCompletedChapters(newCompleted);
+      
+      // Check if all 6 chapters complete
+      if (newCompleted >= 6) {
+        setIsGameComplete(true);
+      }
+    };
+
+    window.addEventListener('gameStateUpdate', handleGameUpdate as EventListener);
+    return () => {
+      window.removeEventListener('gameStateUpdate', handleGameUpdate as EventListener);
+    };
+  }, []);
+
   // Handle username submit
   const handleUsernameSubmit = async (username: string) => {
     if (!fingerprint) return { success: false, error: 'No fingerprint' };
@@ -125,31 +186,20 @@ const GameContent: React.FC = () => {
     }
   };
 
-  // Handle chapter complete from GameEngine
-  const handleChapterComplete = useCallback((chapter: number, documents: string[]) => {
-    setCompletedChapters(prev => {
-      if (!prev.includes(chapter)) {
-        return [...prev, chapter];
-      }
-      return prev;
-    });
-    setUnlockedDocuments(prev => {
-      const newDocs = documents.filter(d => !prev.includes(d));
-      return [...prev, ...newDocs];
-    });
+  // FIXED: Handle chapter complete from GameEngine - now takes just one argument
+  const handleChapterComplete = useCallback((chapter: number) => {
+    console.log(`Chapter ${chapter} completed!`);
+    setCompletedChapters(chapter);
     
-    // Check if all chapters complete (currently just chapter 1)
-    // Update this when more chapters are added
-    if (chapter >= 1) {
-      // For now, chapter 1 complete = game complete (until more chapters added)
-      // setIsGameComplete(true);
+    // Check if all 6 chapters complete
+    if (chapter >= 6) {
+      setIsGameComplete(true);
     }
   }, []);
 
   // Handle restart
   const handleRestart = useCallback(() => {
-    setCompletedChapters([]);
-    setUnlockedDocuments([]);
+    setCompletedChapters(0);
     setIsGameComplete(false);
     // Clear localStorage save
     localStorage.removeItem('island-escape-save');
@@ -209,17 +259,41 @@ const GameContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Background effects */}
-      <div className="fixed inset-0 bg-gradient-to-b from-red-950/20 via-black to-black z-0" />
-      <div className="fixed inset-0 opacity-5 z-0" style={{
-        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)'
-      }} />
+    <div className="min-h-screen bg-black text-white">
+      {/* Red gradient overlay - from top to progress area */}
+      <div className="fixed inset-x-0 top-0 h-[400px] bg-gradient-to-b from-red-950/30 via-red-950/10 to-transparent pointer-events-none z-0" />
 
-      {/* Header */}
-      <header className="relative z-10 border-b border-red-500/20 bg-black/80 backdrop-blur-sm sticky top-0">
+      {/* Header - Fades on scroll */}
+      <header 
+        className={`fixed top-0 left-0 right-0 z-50 border-b border-red-500/20 bg-black/80 backdrop-blur-sm transition-all duration-300 ${
+          isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+        }`}
+        style={{ 
+          opacity: Math.max(0.3, headerOpacity),
+          backdropFilter: `blur(${8 * headerOpacity}px)`,
+        }}
+      >
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Left side - Back button and title */}
           <div className="flex items-center gap-3">
+            {/* Back Button */}
+            <Link 
+              href="/"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white/60 text-xs hover:bg-white/10 hover:border-red-500/30 hover:text-red-400 transition-all group"
+            >
+              <svg 
+                className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="hidden sm:inline">Back</span>
+            </Link>
+            
+            <div className="h-4 w-px bg-white/10 hidden sm:block" />
+            
             <span className="font-pixel text-red-500 text-sm hidden sm:inline">ESCAPE THE ISLAND</span>
             
             {/* Sound Toggle */}
@@ -235,14 +309,21 @@ const GameContent: React.FC = () => {
               {soundEnabled ? '🔊' : '🔇'}
             </button>
           </div>
+          
+          {/* Center - Username (hidden on mobile) */}
           {observer && (
-            <span className="text-white/40 text-xs hidden md:inline">
+            <span className="text-white/40 text-xs hidden md:inline absolute left-1/2 -translate-x-1/2">
               Survivor: <span className="text-red-400">{observer.username}</span>
             </span>
           )}
+          
+          {/* Right side - Wallet */}
           <WalletButton />
         </div>
       </header>
+
+      {/* Spacer for fixed header */}
+      <div className="h-14" />
 
       {/* Main Content */}
       <main className="relative z-10 max-w-6xl mx-auto px-4 py-6 md:py-10">
@@ -256,10 +337,7 @@ const GameContent: React.FC = () => {
                 YOU ESCAPED!
               </h2>
               <p className="text-white/70 mb-2">
-                Chapters Completed: <span className="text-green-400 font-bold">{completedChapters.length}</span>
-              </p>
-              <p className="text-white/70 mb-6">
-                Documents Unlocked: <span className="text-amber-400 font-bold">{unlockedDocuments.length}</span>
+                Chapters Completed: <span className="text-green-400 font-bold">{completedChapters}/6</span>
               </p>
               <p className="text-white/50 text-sm mb-8">
                 You've escaped the island with the evidence. The truth will be exposed. 
@@ -276,7 +354,7 @@ const GameContent: React.FC = () => {
             {/* Show Vault at the end */}
             <div className="mt-8">
               <Vault 
-                completedChapters={completedChapters.length} 
+                completedChapters={completedChapters} 
                 isVisible={true} 
               />
             </div>
@@ -284,65 +362,44 @@ const GameContent: React.FC = () => {
         ) : (
           /* Active Game - Using NEW Branching GameEngine */
           <>
-            {/* Chapter Image Header */}
-            <div className="text-center mb-6">
-              <div className="my-4 flex justify-center">
-                <div className="relative w-full max-w-2xl h-48 md:h-64 rounded-lg overflow-hidden border border-red-500/20 bg-black/50">
-                  {/* Chapter Image */}
-                  <img 
-                    src="/images/chapter-1.png"
-                    alt="Chapter 1 - The Awakening"
-                    className="w-full h-full object-cover opacity-90"
-                  />
-                  {/* Scanline effect */}
-                  <div className="absolute inset-0 pointer-events-none opacity-30" style={{
-                    backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)'
-                  }} />
-                  {/* Glow border */}
-                  <div className="absolute inset-0 border border-red-500/30 rounded-lg" style={{
-                    boxShadow: 'inset 0 0 20px rgba(239, 68, 68, 0.2)'
-                  }} />
-                </div>
-              </div>
-            </div>
-
-            {/* NEW Branching Game Engine */}
-            <div className="max-w-3xl mx-auto mb-6">
+            {/* Game & Chat Container - Same width alignment */}
+            <div className="max-w-3xl mx-auto space-y-6">
+              {/* NEW Branching Game Engine with TV Overlay */}
               <GameEngine 
                 soundEnabled={soundEnabled}
                 onChapterComplete={handleChapterComplete}
               />
-            </div>
 
-            {/* Chat Section */}
-            <div className="max-w-3xl mx-auto">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-red-400 text-xs font-pixel">💬 SURVIVOR CHAT</span>
-                <span className="text-white/30 text-xs">Discuss strategies</span>
-                {isChatConnected && (
-                  <span className="ml-auto flex items-center gap-1 text-green-400/60 text-xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    LIVE
-                  </span>
-                )}
-              </div>
-              <div className="h-[250px] bg-black/50 border border-red-500/20 rounded-xl overflow-hidden">
-                <ChatConsole
-                  messages={messages}
-                  onSendMessage={handleSendMessage}
-                  isConnected={isChatConnected}
-                  username={observer?.username || null}
-                  cooldownSeconds={cooldownSeconds}
-                  maxLength={maxLength}
-                  chatEnabled={chatEnabled}
-                />
+              {/* Chat Section */}
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-red-400 text-xs font-pixel">💬 SURVIVOR CHAT</span>
+                  <span className="text-white/30 text-xs">Discuss strategies</span>
+                  {isChatConnected && (
+                    <span className="ml-auto flex items-center gap-1 text-green-400/60 text-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                      LIVE
+                    </span>
+                  )}
+                </div>
+                <div className="h-[250px] bg-black/50 border border-red-500/20 rounded-xl overflow-hidden">
+                  <ChatConsole
+                    messages={messages}
+                    onSendMessage={handleSendMessage}
+                    isConnected={isChatConnected}
+                    username={observer?.username || null}
+                    cooldownSeconds={cooldownSeconds}
+                    maxLength={maxLength}
+                    chatEnabled={chatEnabled}
+                  />
+                </div>
               </div>
             </div>
 
             {/* The Vault - Shows progress */}
             <div className="mt-8">
               <Vault 
-                completedChapters={completedChapters.length} 
+                completedChapters={completedChapters} 
                 isVisible={true} 
               />
             </div>

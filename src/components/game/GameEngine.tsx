@@ -20,8 +20,89 @@ const TOTAL_CHAPTERS = 6;
 // Local storage keys
 const SAVE_KEY = 'island-escape-save';
 
+// Get dynamic stage image based on current node
+const getStageImage = (chapter: number, nodeId: string, stage: number): string => {
+  const nodeIdLower = nodeId.toLowerCase();
+  
+  // Chapter 1 image mapping based on node IDs
+  if (chapter === 1) {
+    // Stage 1: Wake up
+    if (nodeIdLower.startsWith('1-s1')) {
+      if (nodeIdLower.includes('death')) return '/C1/C1S3-death.jpg';
+      return '/C1/C1S1.jpg';
+    }
+    
+    // Stage 2: Assess the room
+    if (nodeIdLower.startsWith('1-s2')) {
+      if (nodeIdLower.includes('death')) return '/C1/C1S3-death.jpg';
+      if (nodeIdLower.includes('vent')) return '/C1/C1S2%20VENT.jpg';
+      if (nodeIdLower.includes('cot')) return '/C1/C1S2-Cot.jpg';
+      if (nodeIdLower.includes('door')) return '/C1/C1S2-door.jpg';
+      return '/C1/C1S2.jpg';
+    }
+    
+    // Stage 3: Free yourself
+    if (nodeIdLower.startsWith('1-s3')) {
+      if (nodeIdLower.includes('death')) return '/C1/C1S3-death.jpg';
+      if (nodeIdLower.includes('earring')) return '/C1/C1S3-earrings.jpg';
+      return '/C1/C1S3.jpg';
+    }
+    
+    // Stage 4: The plan
+    if (nodeIdLower.startsWith('1-s4')) {
+      if (nodeIdLower.includes('death')) return '/C1/C1S3-death.jpg';
+      if (nodeIdLower.includes('pretend')) return '/C1/C1S4-pretend.jpg';
+      return '/C1/C1S4.jpg';
+    }
+    
+    // Stage 5: Execute escape (NO TV FRAME images)
+    if (nodeIdLower.startsWith('1-s5') || nodeIdLower.includes('complete')) {
+      if (nodeIdLower.includes('death')) return '/C1/C1S3-death.jpg';
+      if (nodeIdLower.includes('door')) return '/C1/C1S5-door.jpg';
+      if (nodeIdLower.includes('guest') || nodeIdLower.includes('quarters')) return '/C1/C1S5-guest%20quarters.jpg';
+      if (nodeIdLower.includes('prisoner')) return '/C1/C1S5-prisoners.jpg';
+      if (nodeIdLower.includes('runner') || nodeIdLower.includes('run')) return '/C1/C1S5-runner.jpg';
+      return '/C1/C1S5.jpg';
+    }
+    
+    // Default for chapter 1
+    return '/C1/C1S1.jpg';
+  }
+  
+  // Chapter 2 image mapping
+  if (chapter === 2) {
+    // Stage 1
+    if (nodeIdLower.startsWith('2-s1')) {
+      if (nodeIdLower.includes('death')) return '/C2/C2S1-death.jpg';
+      if (nodeIdLower.includes('marina')) return '/C2/C2S1-MARINA.jpg';
+      return '/C2/C2S1.jpg';
+    }
+    
+    // Stage 2
+    if (nodeIdLower.startsWith('2-s2')) {
+      if (nodeIdLower.includes('death') || nodeIdLower.includes('escape')) return '/C2/C2S2-escape%20death.jpg';
+      return '/C2/C2S1.jpg'; // Fallback
+    }
+    
+    // Stage 5
+    if (nodeIdLower.startsWith('2-s5') || nodeIdLower.includes('complete')) {
+      if (nodeIdLower.includes('death')) return '/C2/C2S5-DEATH.jpg';
+      if (nodeIdLower.includes('freedom') || nodeIdLower.includes('escape')) return '/C2/C2S5-FREEDOM.jpg';
+      if (nodeIdLower.includes('file')) return '/C2/C2S5-FILES.jpg';
+      if (nodeIdLower.includes('girl') || nodeIdLower.includes('2girl')) return '/C2/C2S5-2GIRLS.jpg';
+      return '/C2/C2S5-FREEDOM.jpg';
+    }
+    
+    // Default for chapter 2
+    return '/C2/C2S1.jpg';
+  }
+  
+  // For other chapters, use generic stage image pattern
+  return `/C${chapter}/C${chapter}S${stage}.jpg`;
+};
+
 interface GameEngineProps {
-  onChapterComplete?: (chapter: number, documents: string[]) => void;
+  onChapterComplete?: (completedChapter: number) => void;
   soundEnabled?: boolean;
 }
 
@@ -34,6 +115,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     currentNodeId: CHAPTER_1.startNode,
     path: [CHAPTER_1.startNode],
     unlockedDocuments: [],
+    completedChapters: 0,
     startTime: Date.now(),
     deaths: 0,
   });
@@ -47,6 +129,9 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     if (saved) {
       try {
         const savedState = JSON.parse(saved) as GameState;
+        if (savedState.completedChapters === undefined) {
+          savedState.completedChapters = 0;
+        }
         setGameState(savedState);
       } catch (e) {
         console.error('Failed to load save:', e);
@@ -79,13 +164,6 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         currentNodeId: choice.nextNode,
         path: [...prev.path, choice.nextNode],
       };
-      
-      // Check if the new node has a document
-      const chapter = CHAPTERS[prev.currentChapter];
-      const nextNode = chapter?.nodes[choice.nextNode];
-      if (nextNode?.document) {
-        newState.unlockedDocuments = [...prev.unlockedDocuments, nextNode.document.pdfUrl];
-      }
       
       saveGame(newState);
       return newState;
@@ -125,9 +203,10 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
   // Handle chapter complete
   const handleChapterComplete = useCallback((nextChapter: number) => {
-    // Notify parent
+    const justCompletedChapter = gameState.currentChapter;
+    
     if (onChapterComplete) {
-      onChapterComplete(gameState.currentChapter, gameState.unlockedDocuments);
+      onChapterComplete(justCompletedChapter);
     }
     
     const nextChapterData = CHAPTERS[nextChapter];
@@ -139,15 +218,23 @@ export const GameEngine: React.FC<GameEngineProps> = ({
           currentChapter: nextChapter,
           currentNodeId: nextChapterData.startNode,
           path: [...prev.path, `CHAPTER_${nextChapter}`, nextChapterData.startNode],
+          completedChapters: Math.max(prev.completedChapters || 0, justCompletedChapter),
         };
         saveGame(newState);
         return newState;
       });
     } else {
-      // No more chapters - game complete!
+      setGameState(prev => {
+        const newState: GameState = {
+          ...prev,
+          completedChapters: TOTAL_CHAPTERS,
+        };
+        saveGame(newState);
+        return newState;
+      });
       console.log('Game complete!');
     }
-  }, [gameState.currentChapter, gameState.unlockedDocuments, onChapterComplete, saveGame]);
+  }, [gameState.currentChapter, onChapterComplete, saveGame]);
 
   // Reset game
   const resetGame = useCallback(() => {
@@ -157,6 +244,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
       currentNodeId: chapter.startNode,
       path: [chapter.startNode],
       unlockedDocuments: [],
+      completedChapters: 0,
       startTime: Date.now(),
       deaths: 0,
     };
@@ -164,7 +252,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     saveGame(newState);
   }, [saveGame]);
 
-  // Get current stage from node ID (e.g., "1-s2" -> stage 2)
+  // Get current stage from node ID
   const getCurrentStage = (): number => {
     const nodeId = gameState.currentNodeId;
     const match = nodeId.match(/-s(\d)/);
@@ -172,6 +260,19 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     if (nodeId.includes('complete') || nodeId.includes('soon')) return 5;
     return 1;
   };
+
+  // Expose game state for parent components
+  useEffect(() => {
+    const currentStage = getCurrentStage();
+    window.dispatchEvent(new CustomEvent('gameStateUpdate', { 
+      detail: { 
+        completedChapters: gameState.completedChapters || 0,
+        currentChapter: gameState.currentChapter,
+        currentStage: currentStage,
+        currentNodeId: gameState.currentNodeId,
+      }
+    }));
+  }, [gameState.completedChapters, gameState.currentChapter, gameState.currentNodeId]);
 
   if (isLoading) {
     return (
@@ -197,11 +298,12 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
   const chapter = CHAPTERS[gameState.currentChapter];
   const currentStage = getCurrentStage();
+  const stageImage = getStageImage(gameState.currentChapter, gameState.currentNodeId, currentStage);
 
   return (
     <div className="space-y-4">
       {/* Chapter & Stage header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h2 className="text-red-400 font-pixel text-lg">{chapter.title}</h2>
           <p className="text-white/40 text-sm">{chapter.subtitle}</p>
@@ -215,7 +317,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
       </div>
 
       {/* Progress bar for stages */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-white/40 text-xs">Progress</span>
           <span className="text-amber-400 text-xs font-pixel">STAGE {currentStage}/5</span>
@@ -244,7 +346,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         </div>
       </div>
 
-      {/* Story node display */}
+      {/* Story node display with TV overlay */}
       <StoryNodeDisplay
         node={currentNode}
         onChoice={handleChoice}
@@ -252,19 +354,23 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         onDeath={handleDeath}
         onChapterComplete={handleChapterComplete}
         soundEnabled={soundEnabled}
+        stageImage={stageImage}
       />
 
-      {/* Documents count */}
-      {gameState.unlockedDocuments.length > 0 && (
-        <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-          <p className="text-amber-400 text-xs font-pixel">
-            📄 DOCUMENTS UNLOCKED: {gameState.unlockedDocuments.length}
+      {/* Completed chapters indicator */}
+      {(gameState.completedChapters || 0) > 0 && (
+        <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <p className="text-green-400 text-xs font-pixel">
+            🏆 CHAPTERS COMPLETED: {gameState.completedChapters}/{TOTAL_CHAPTERS}
+          </p>
+          <p className="text-green-400/60 text-xs mt-1">
+            Check the Vault to view unlocked documents!
           </p>
         </div>
       )}
 
       {/* Reset Game Button */}
-      <div className="mt-6 pt-4 border-t border-white/10">
+      <div className="mt-4 pt-4 border-t border-white/10">
         <button
           onClick={() => {
             if (confirm('Reset all progress? This cannot be undone.')) {
@@ -276,22 +382,6 @@ export const GameEngine: React.FC<GameEngineProps> = ({
           🔄 RESET GAME (Start Over)
         </button>
       </div>
-
-      {/* Path history (debug/development) */}
-      {process.env.NODE_ENV === 'development' && (
-        <details className="mt-4">
-          <summary className="text-white/20 text-xs cursor-pointer">Debug: Path History</summary>
-          <div className="mt-2 p-2 bg-black/50 rounded text-white/30 text-xs font-mono max-h-32 overflow-auto">
-            {gameState.path.join(' → ')}
-          </div>
-          <button
-            onClick={resetGame}
-            className="mt-2 px-2 py-1 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-xs"
-          >
-            Reset Game
-          </button>
-        </details>
-      )}
     </div>
   );
 };

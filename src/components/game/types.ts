@@ -101,6 +101,7 @@ export interface GameState {
   currentNodeId: string;
   path: string[];
   unlockedDocuments: string[];
+  completedChapters: number; // Highest chapter number completed (0 = none, 1 = ch1 done, etc.)
   startTime: number;
   deaths: number;
 }
