@@ -57,7 +57,7 @@ const getStageImage = (chapter: number, nodeId: string, stage: number): string =
       return '/C1/C1S4.jpg';
     }
     
-    // Stage 5: Execute escape (NO TV FRAME images)
+    // Stage 5: Execute escape
     if (nodeIdLower.startsWith('1-s5') || nodeIdLower.includes('complete')) {
       if (nodeIdLower.includes('death')) return '/C1/C1S3-death.jpg';
       if (nodeIdLower.includes('door')) return '/C1/C1S5-door.jpg';
@@ -83,7 +83,7 @@ const getStageImage = (chapter: number, nodeId: string, stage: number): string =
     // Stage 2
     if (nodeIdLower.startsWith('2-s2')) {
       if (nodeIdLower.includes('death') || nodeIdLower.includes('escape')) return '/C2/C2S2-escape%20death.jpg';
-      return '/C2/C2S1.jpg'; // Fallback
+      return '/C2/C2S1.jpg';
     }
     
     // Stage 5
@@ -99,7 +99,49 @@ const getStageImage = (chapter: number, nodeId: string, stage: number): string =
     return '/C2/C2S1.jpg';
   }
   
-  // For other chapters, use generic stage image pattern
+  // Chapter 3 image mapping - The Investigation
+  if (chapter === 3) {
+    // Stage 1: Aftermath/Rescue
+    if (nodeIdLower.startsWith('3-s1')) {
+      return '/C3/C3S1.png';
+    }
+    
+    // Stage 2: In the water/Swimming
+    if (nodeIdLower.startsWith('3-s2')) {
+      return '/C3/C3S2-WATER.png';
+    }
+    
+    // Stage 3: Boat/Rescue
+    if (nodeIdLower.startsWith('3-s3')) {
+      return '/C3/C3S3-boat.png';
+    }
+    
+    // Stage 4: Police/FBI
+    if (nodeIdLower.startsWith('3-s4')) {
+      if (nodeIdLower.includes('saved') || nodeIdLower.includes('sved')) return '/C3/c3s4-sved.png';
+      if (nodeIdLower.includes('police2') || nodeIdLower.includes('station')) return '/C3/C3S4-police2.png';
+      return '/C3/C3S4-police.png';
+    }
+    
+    // Stage 5: Hospital/Investigation/Complete
+    if (nodeIdLower.startsWith('3-s5') || nodeIdLower.includes('complete')) {
+      if (nodeIdLower.includes('hospital') || nodeIdLower.includes('medical')) return '/C3/C3S5-hospital.png';
+      if (nodeIdLower.includes('investigate') || nodeIdLower.includes('fbi')) return '/C3/C3S5-investigate.png';
+      if (nodeIdLower.includes('presence') || nodeIdLower.includes('media')) return '/C3/C3S5-presence.png';
+      return '/C3/C3S5-investigate.png';
+    }
+    
+    // Default for chapter 3
+    return '/C3/C3S1.png';
+  }
+  
+  // Chapter 4 image mapping - The Testimony
+  if (chapter === 4) {
+    // All stages use the courtroom/testimony image
+    return '/C4/C5S1.png';
+  }
+  
+  // For other chapters (5-8), use generic stage image pattern
   return `/C${chapter}/C${chapter}S${stage}.jpg`;
 };
 
@@ -226,6 +268,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         return newState;
       });
     } else {
+      // Game complete!
       setGameState(prev => {
         const newState: GameState = {
           ...prev,
@@ -257,6 +300,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
   // Get current stage from node ID
   const getCurrentStage = (): number => {
     const nodeId = gameState.currentNodeId;
+    if (!nodeId) return 1;
     const match = nodeId.match(/-s(\d)/);
     if (match) return parseInt(match[1]);
     if (nodeId.includes('complete') || nodeId.includes('soon')) return 5;
@@ -366,7 +410,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             🏆 CHAPTERS COMPLETED: {gameState.completedChapters}/{TOTAL_CHAPTERS}
           </p>
           <p className="text-green-400/60 text-xs mt-1">
-            Check the Vault to view unlocked documents!
+            Complete all 8 chapters to unlock the Vault!
           </p>
         </div>
       )}

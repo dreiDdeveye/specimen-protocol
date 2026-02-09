@@ -111,6 +111,25 @@ const useTypingSound = () => {
 
   return playClick;
 };
+
+// Music Icon Components
+const MusicOnIcon: React.FC<{ size?: number; className?: string }> = ({ size = 24, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+);
+
+const MusicOffIcon: React.FC<{ size?: number; className?: string }> = ({ size = 24, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+    <line x1="1" y1="1" x2="23" y2="23" strokeWidth="2" />
+  </svg>
+);
+
 // File Icon Component
 const FileIcon: React.FC<{ size?: number; className?: string }> = ({ size = 24, className = '' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
@@ -449,14 +468,100 @@ const CASection: React.FC<{ show: boolean }> = ({ show }) => {
   );
 };
 
+// Music Toggle Button Component (Simple - Max Volume Only)
+const MusicToggle: React.FC<{ 
+  isPlaying: boolean; 
+  onToggle: () => void;
+}> = ({ isPlaying, onToggle }) => {
+  return (
+    <button
+      onClick={onToggle}
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
+        isPlaying 
+          ? 'bg-red-500/20 border-red-500/50 text-red-400' 
+          : 'bg-white/5 border-white/20 text-white/50 hover:border-red-500/30 hover:text-red-400'
+      }`}
+      title={isPlaying ? 'Pause Music' : 'Play Music'}
+    >
+      {isPlaying ? (
+        <MusicOnIcon size={16} />
+      ) : (
+        <MusicOffIcon size={16} />
+      )}
+      <span className="text-xs hidden sm:inline">{isPlaying ? 'ON' : 'OFF'}</span>
+    </button>
+  );
+};
+
 export default function LandingPage() {
   const [glowIntensity, setGlowIntensity] = useState(1);
   const [showPopup, setShowPopup] = useState(true);
   const [typingStep, setTypingStep] = useState(0);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
+  
+  // Background music state
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const startLandingTyping = !showPopup;
+
+  // Initialize audio on mount (max volume)
+  useEffect(() => {
+    audioRef.current = new Audio('/bgmusic.mp3');
+    audioRef.current.loop = true;
+    audioRef.current.volume = 1.0; // MAX VOLUME
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Autoplay music on first user interaction (click anywhere)
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      if (!hasUserInteracted && audioRef.current) {
+        setHasUserInteracted(true);
+        audioRef.current.play().then(() => {
+          setIsMusicPlaying(true);
+        }).catch(err => {
+          console.log('Audio autoplay failed:', err);
+        });
+        // Remove listeners after first interaction
+        document.removeEventListener('click', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+        document.removeEventListener('keydown', handleFirstInteraction);
+      }
+    };
+
+    document.addEventListener('click', handleFirstInteraction);
+    document.addEventListener('touchstart', handleFirstInteraction);
+    document.addEventListener('keydown', handleFirstInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+    };
+  }, [hasUserInteracted]);
+
+  // Toggle music function
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isMusicPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(err => {
+          console.log('Audio play failed:', err);
+        });
+      }
+      setIsMusicPlaying(!isMusicPlaying);
+    }
+  };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -589,6 +694,12 @@ export default function LandingPage() {
             </span>
           </Link>
           <nav className={`flex items-center gap-4 transition-all duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
+            {/* Music Toggle */}
+            <MusicToggle 
+              isPlaying={isMusicPlaying}
+              onToggle={toggleMusic}
+            />
+            
             <a 
               href="https://x.com/i/communities/2019914054790525221" 
               target="_blank"

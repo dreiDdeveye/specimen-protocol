@@ -100,7 +100,7 @@ export const MysteryPopup: React.FC<MysteryPopupProps> = ({ onClose }) => {
                 }}
               >
                 <TypewriterText 
-                  text="THE EPSTEIN" 
+                  text="THE ISLAND" 
                   speed={60} 
                   delay={300}
                   onComplete={() => setStep(1)}
