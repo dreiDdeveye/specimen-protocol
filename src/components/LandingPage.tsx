@@ -882,7 +882,7 @@ export default function LandingPage() {
         <section id="how-it-works" className={`border-t border-white/5 bg-gradient-to-b from-transparent to-terminal-surface/20 transition-opacity duration-500 ${typingStep >= 6 ? 'opacity-100' : 'opacity-0'}`}>
           <div className="max-w-7xl mx-auto px-6 py-24">
             <div className="text-center mb-20">
-              <span className="text-red-400 text-xs font-pixel tracking-widest mb-4 block">THE PROTOCOL</span>
+              <span className="text-red-400 text-xs font-pixel tracking-widest mb-4 block">THE ARCHIVES</span>
               <h2 className="font-pixel text-3xl lg:text-4xl text-white mb-6">HOW IT <span className="text-red-400">WORKS</span></h2>
               <p className="text-white/50 max-w-2xl mx-auto text-lg leading-relaxed">
                 Complete survival chapters to unlock classified documents. 

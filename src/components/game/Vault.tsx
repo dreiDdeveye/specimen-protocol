@@ -7,21 +7,19 @@ interface VaultFolder {
   title: string;
   subtitle: string;
   color: string;
-  unlocksAtChapter: number;
   documents: {
     title: string;
     pdfUrl: string;
   }[];
 }
 
-// Updated to match 6 chapters with correct unlock logic
+// 8 Chapter folders - ALL locked until Chapter 8 is complete
 const VAULT_FOLDERS: VaultFolder[] = [
   {
     id: 'chapter-1',
     title: 'CHAPTER 1',
-    subtitle: 'The Awakening',
+    subtitle: 'The Island',
     color: '#ef4444', // red
-    unlocksAtChapter: 1,
     documents: [
       { title: 'Gala Invitation', pdfUrl: '/documents/gala-invitation.pdf' },
       { title: 'Missing Persons Report', pdfUrl: '/documents/missing-persons.pdf' },
@@ -31,9 +29,8 @@ const VAULT_FOLDERS: VaultFolder[] = [
   {
     id: 'chapter-2',
     title: 'CHAPTER 2',
-    subtitle: 'The Compound',
+    subtitle: 'The Escape',
     color: '#f97316', // orange
-    unlocksAtChapter: 2,
     documents: [
       { title: 'Island Map', pdfUrl: '/documents/island-map.pdf' },
       { title: 'Security Protocols', pdfUrl: '/documents/security-protocols.pdf' },
@@ -43,9 +40,8 @@ const VAULT_FOLDERS: VaultFolder[] = [
   {
     id: 'chapter-3',
     title: 'CHAPTER 3',
-    subtitle: 'The Escape',
+    subtitle: 'The Investigation',
     color: '#eab308', // yellow
-    unlocksAtChapter: 3,
     documents: [
       { title: 'Boat Registrations', pdfUrl: '/documents/boat-registrations.pdf' },
       { title: 'Coast Guard Frequencies', pdfUrl: '/documents/coast-frequencies.pdf' },
@@ -55,9 +51,8 @@ const VAULT_FOLDERS: VaultFolder[] = [
   {
     id: 'chapter-4',
     title: 'CHAPTER 4',
-    subtitle: 'The Investigation',
+    subtitle: 'The Testimony',
     color: '#22c55e', // green
-    unlocksAtChapter: 4,
     documents: [
       { title: 'Victim List', pdfUrl: '/documents/victim-list.pdf' },
       { title: 'Witness Statements', pdfUrl: '/documents/witness-statements.pdf' },
@@ -70,7 +65,6 @@ const VAULT_FOLDERS: VaultFolder[] = [
     title: 'CHAPTER 5',
     subtitle: 'The Trial',
     color: '#3b82f6', // blue
-    unlocksAtChapter: 5,
     documents: [
       { title: 'Court Transcripts', pdfUrl: '/documents/court-transcripts.pdf' },
       { title: 'Court Filing', pdfUrl: '/documents/court-filing-1.pdf' },
@@ -81,15 +75,41 @@ const VAULT_FOLDERS: VaultFolder[] = [
   {
     id: 'chapter-6',
     title: 'CHAPTER 6',
-    subtitle: 'The Truth',
+    subtitle: 'The Aftermath',
     color: '#8b5cf6', // purple
-    unlocksAtChapter: 6,
     documents: [
+      { title: 'Ashford Financial Records', pdfUrl: '/documents/ashford-financial.pdf' },
+      { title: 'Whistleblower Documents', pdfUrl: '/documents/whistleblower-docs.pdf' },
+      { title: 'Board Meeting Minutes', pdfUrl: '/documents/board-minutes.pdf' },
+      { title: 'Shell Company Network', pdfUrl: '/documents/shell-companies.pdf' },
+    ],
+  },
+  {
+    id: 'chapter-7',
+    title: 'CHAPTER 7',
+    subtitle: 'The Gathering',
+    color: '#ec4899', // pink
+    documents: [
+      { title: 'The Board Identities', pdfUrl: '/documents/board-identities.pdf' },
+      { title: 'Gathering Location Intel', pdfUrl: '/documents/gathering-location.pdf' },
+      { title: 'Raid Operation Plans', pdfUrl: '/documents/raid-plans.pdf' },
+      { title: 'Arrest Warrants', pdfUrl: '/documents/arrest-warrants.pdf' },
+    ],
+  },
+  {
+    id: 'chapter-8',
+    title: 'CHAPTER 8',
+    subtitle: 'The Files',
+    color: '#ffffff', // white - the truth
+    documents: [
+      { title: 'THE CLIENT LIST (247 Names)', pdfUrl: '/documents/client-list-full.pdf' },
       { title: 'Flight Logs Complete', pdfUrl: '/documents/flight-logs-complete.pdf' },
-      { title: 'Flight Logs Part 1', pdfUrl: '/documents/flight-logs-1.pdf' },
-      { title: 'The Black Book Part 1', pdfUrl: '/documents/black-book-1.pdf' },
-      { title: 'The Black Book Part 2', pdfUrl: '/documents/black-book-2.pdf' },
-      { title: 'Financial Records', pdfUrl: '/documents/financial-records.pdf' },
+      { title: 'The Black Book', pdfUrl: '/documents/black-book-complete.pdf' },
+      { title: 'Financial Records ($890M)', pdfUrl: '/documents/financial-records-full.pdf' },
+      { title: 'Photo Evidence Index', pdfUrl: '/documents/photo-evidence.pdf' },
+      { title: 'Video Evidence Index', pdfUrl: '/documents/video-evidence.pdf' },
+      { title: 'The Crown - Victoria Ashworth', pdfUrl: '/documents/crown-file.pdf' },
+      { title: 'FINAL EXPOSURE REPORT', pdfUrl: '/documents/final-exposure.pdf' },
     ],
   },
 ];
@@ -315,7 +335,7 @@ const FolderCard: React.FC<{
           ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
           : 'bg-green-500/20 text-green-400 border border-green-500/30'
       }`}>
-        {isLocked ? '🔒 LOCKED' : '✓ UNLOCKED'}
+        {isLocked ? '🔒 CLASSIFIED' : '✓ DECLASSIFIED'}
       </div>
     </div>
   );
@@ -334,7 +354,7 @@ const DocumentModal: React.FC<{
       onClick={onClose}
     >
       <div 
-        className="bg-gray-900 border border-gray-700 rounded-xl max-w-md w-full p-6 relative"
+        className="bg-gray-900 border border-gray-700 rounded-xl max-w-md w-full max-h-[80vh] overflow-y-auto p-6 relative"
         onClick={e => e.stopPropagation()}
       >
         {/* Close button */}
@@ -369,7 +389,7 @@ const DocumentModal: React.FC<{
         
         {/* Documents List */}
         <div className="space-y-3">
-          <p className="text-gray-400 text-xs font-pixel mb-3">📁 DOCUMENTS UNLOCKED</p>
+          <p className="text-gray-400 text-xs font-pixel mb-3">📁 DECLASSIFIED DOCUMENTS</p>
           {folder.documents.map((doc, i) => (
             <a
               key={i}
@@ -404,7 +424,7 @@ const DocumentModal: React.FC<{
 
 // Main Vault Component
 interface VaultProps {
-  completedChapters: number; // This should be the highest chapter NUMBER completed (1-6)
+  completedChapters: number; // Must be 8 to unlock ALL files
   isVisible: boolean;
 }
 
@@ -419,29 +439,53 @@ export const Vault: React.FC<VaultProps> = ({ completedChapters, isVisible }) =>
   // Ensure completedChapters is a valid number
   const safeCompletedChapters = typeof completedChapters === 'number' ? completedChapters : 0;
   
-  // Count unlocked folders - folder unlocks when completedChapters >= unlocksAtChapter
-  const unlockedCount = VAULT_FOLDERS.filter(f => safeCompletedChapters >= f.unlocksAtChapter).length;
+  // ALL folders are locked until Chapter 8 is complete
+  // This matches the story: YOU expose THE FILES at the end of Chapter 8
+  const allUnlocked = safeCompletedChapters >= 8;
+  
   const totalFolders = VAULT_FOLDERS.length;
+  const unlockedCount = allUnlocked ? totalFolders : 0;
+  
+  // Calculate chapter progress for the progress bar
+  const chapterProgress = Math.min(safeCompletedChapters, 8);
   
   return (
     <div className="mt-10 pt-10 border-t border-red-500/20">
       {/* Header */}
       <div className="text-center mb-8">
-        <span className="text-red-500 text-xs font-pixel tracking-widest">🔒 CLASSIFIED</span>
+        <span className="text-red-500 text-xs font-pixel tracking-widest">
+          {allUnlocked ? '📂 DECLASSIFIED' : '🔒 CLASSIFIED'}
+        </span>
         <h2 className="font-pixel text-3xl md:text-4xl text-white mt-2">
           THE <span className="text-red-500">VAULT</span>
         </h2>
-        <p className="text-gray-500 text-sm mt-3 max-w-md mx-auto">
-          Complete each chapter to unlock classified documents. Click folders to reveal contents.
-        </p>
+        
+        {allUnlocked ? (
+          <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg max-w-lg mx-auto">
+            <p className="text-green-400 text-sm font-pixel">
+              ✓ ALL FILES EXPOSED TO THE PUBLIC
+            </p>
+            <p className="text-gray-400 text-xs mt-2">
+              247 names. 30 years of evidence. The truth is now known.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg max-w-lg mx-auto">
+            <p className="text-red-400 text-sm font-pixel">
+              ⚠ FILES SEALED BY GOVERNMENT ORDER
+            </p>
+            <p className="text-gray-400 text-xs mt-2">
+              Complete all 8 chapters to expose the truth. The files will be released when the survivor makes their choice.
+            </p>
+          </div>
+        )}
       </div>
       
-      {/* Folders Grid - 3 columns on desktop for 6 folders */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-10 max-w-3xl mx-auto mb-10 px-4">
+      {/* Folders Grid - 4 columns on desktop for 8 folders */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-4xl mx-auto mb-10 px-4">
         {VAULT_FOLDERS.map((folder) => {
-          // Folder is locked if completedChapters is LESS than unlocksAtChapter
-          const isLocked = safeCompletedChapters < folder.unlocksAtChapter;
-          console.log(`[Vault] Folder ${folder.id}: unlocksAt=${folder.unlocksAtChapter}, completed=${safeCompletedChapters}, isLocked=${isLocked}`);
+          // ALL folders locked until chapter 8 complete
+          const isLocked = !allUnlocked;
           return (
             <FolderCard
               key={folder.id}
@@ -453,29 +497,63 @@ export const Vault: React.FC<VaultProps> = ({ completedChapters, isVisible }) =>
         })}
       </div>
       
-      {/* Progress Bar */}
+      {/* Progress Section */}
       <div className="max-w-md mx-auto px-4">
+        {/* Chapter Progress */}
         <div className="flex items-center justify-between mb-2">
           <span className="text-gray-400 text-xs font-pixel tracking-wider">
             CHAPTERS COMPLETED
           </span>
           <span className="text-red-400 text-xs font-pixel">
-            {unlockedCount} / {totalFolders}
+            {chapterProgress} / 8
+          </span>
+        </div>
+        <div className="h-2 bg-gray-800 rounded-full overflow-hidden mb-4">
+          <div 
+            className="h-full bg-gradient-to-r from-red-600 to-orange-500 rounded-full transition-all duration-500"
+            style={{ width: `${(chapterProgress / 8) * 100}%` }}
+          />
+        </div>
+        
+        {/* Vault Status */}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-gray-400 text-xs font-pixel tracking-wider">
+            VAULT STATUS
+          </span>
+          <span className={`text-xs font-pixel ${allUnlocked ? 'text-green-400' : 'text-red-400'}`}>
+            {allUnlocked ? 'EXPOSED' : 'SEALED'}
           </span>
         </div>
         <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-red-600 to-orange-500 rounded-full transition-all duration-500"
-            style={{ width: `${(unlockedCount / totalFolders) * 100}%` }}
+            className={`h-full rounded-full transition-all duration-500 ${
+              allUnlocked 
+                ? 'bg-gradient-to-r from-green-600 to-green-400 w-full' 
+                : 'bg-gray-600 w-0'
+            }`}
           />
         </div>
+        
+        {/* Status Message */}
         <p className="text-center text-gray-600 text-xs mt-4">
-          {unlockedCount === 0 
-            ? 'COMPLETE CHAPTER 1 TO BEGIN UNLOCKING FILES'
-            : unlockedCount === totalFolders 
-            ? '🎉 ALL DOCUMENTS DECLASSIFIED - THE TRUTH IS REVEALED'
-            : `COMPLETE CHAPTER ${unlockedCount + 1} TO UNLOCK MORE FILES`}
+          {allUnlocked 
+            ? '🎉 THE TRUTH IS OUT. NO ONE IS UNTOUCHABLE.'
+            : chapterProgress === 0
+            ? 'BEGIN YOUR JOURNEY TO UNCOVER THE TRUTH'
+            : chapterProgress < 8
+            ? `CHAPTER ${chapterProgress + 1} AWAITS. THE FILES REMAIN SEALED.`
+            : 'COMPLETE CHAPTER 8 TO EXPOSE EVERYTHING'
+          }
         </p>
+        
+        {/* Teaser for locked state */}
+        {!allUnlocked && (
+          <div className="mt-6 p-3 bg-black/50 border border-gray-800 rounded-lg">
+            <p className="text-gray-500 text-[10px] font-pixel text-center">
+              "The government wants to seal these files for 75 years. Complete Chapter 8 to release everything to the public."
+            </p>
+          </div>
+        )}
       </div>
       
       {/* Document Modal */}
