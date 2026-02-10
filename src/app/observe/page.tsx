@@ -152,7 +152,7 @@ const GameContent: React.FC = () => {
       setCompletedChapters(newCompleted);
       
       // Check if all 6 chapters complete
-      if (newCompleted >= 6) {
+      if (newCompleted >= 8) {
         setIsGameComplete(true);
       }
     };
@@ -192,7 +192,7 @@ const GameContent: React.FC = () => {
     setCompletedChapters(chapter);
     
     // Check if all 6 chapters complete
-    if (chapter >= 6) {
+    if (chapter >= 8) {
       setIsGameComplete(true);
     }
   }, []);
