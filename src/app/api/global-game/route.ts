@@ -19,6 +19,7 @@ interface GlobalGameState {
   decided: boolean;
   winningChoice: string | null;
   completedChapters: number;
+  deaths: number;
   lastActivity: number;
 }
 
@@ -42,6 +43,7 @@ function getGlobalState(): GlobalGameState {
       decided: false,
       winningChoice: null,
       completedChapters: 0,
+      deaths: 0,
       lastActivity: Date.now(),
     };
   }
@@ -112,6 +114,8 @@ export async function GET(request: NextRequest) {
         votingEndsAt: state.votingEndsAt,
         decided: state.decided,
         winningChoice: state.winningChoice,
+        completedChapters: state.completedChapters,
+        deaths: state.deaths || 0,
       },
       onlineCount: onlineUsers.size,
     });
@@ -128,7 +132,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, chapter, nodeId } = body;
+    const { action, chapter, nodeId, isDeath, isChapterComplete } = body;
     
     const state = getGlobalState();
     
@@ -150,6 +154,16 @@ export async function POST(request: NextRequest) {
     }
     
     if (action === 'advance' && chapter && nodeId) {
+      // Track deaths
+      if (isDeath) {
+        state.deaths = (state.deaths || 0) + 1;
+      }
+      
+      // Track chapter completion
+      if (isChapterComplete) {
+        state.completedChapters = Math.max(state.completedChapters || 0, chapter - 1);
+      }
+      
       // Advance to specific node
       state.chapter = chapter;
       state.nodeId = nodeId;

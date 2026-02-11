@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { BranchingChapter, StoryNode, BranchingChoice, GameState } from './types';
+import { BranchingChapter, StoryNode, BranchingChoice } from './types';
 import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8 } from './chapters';
 
-// All chapters (branching system)
+// All chapters (branching system) - Same as GameEngine
 const CHAPTERS: Record<number, BranchingChapter> = {
   1: CHAPTER_1,
   2: CHAPTER_2,
@@ -29,11 +29,13 @@ interface VoteData {
 interface GlobalVoteState {
   chapter: number;
   nodeId: string;
-  votes: Record<string, VoteData[]>; // choiceId -> votes
+  votes: Record<string, VoteData[]>;
   totalVoters: number;
   votingEndsAt: number;
   decided: boolean;
   winningChoice: string | null;
+  completedChapters: number;
+  deaths: number;
 }
 
 // Typewriter sound hook
@@ -216,7 +218,7 @@ const VotingTimer: React.FC<{
   );
 };
 
-// Vote Bar Component - Shows percentage with animation
+// Vote Bar Component
 const VoteBar: React.FC<{
   choiceId: string;
   choiceText: string;
@@ -319,10 +321,11 @@ const VoteBar: React.FC<{
   );
 };
 
-// Get stage image
+// Get stage image - Same as GameEngine
 const getStageImage = (chapter: number, nodeId: string, stage: number): string => {
   const nodeIdLower = nodeId.toLowerCase();
   
+  // Chapter 1 image mapping
   if (chapter === 1) {
     if (nodeIdLower.startsWith('1-s1')) {
       if (nodeIdLower.includes('death')) return '/C1/C1S3-death.jpg';
@@ -356,6 +359,7 @@ const getStageImage = (chapter: number, nodeId: string, stage: number): string =
     return '/C1/C1S1.jpg';
   }
   
+  // Chapter 2 image mapping
   if (chapter === 2) {
     if (nodeIdLower.startsWith('2-s1')) {
       if (nodeIdLower.includes('death')) return '/C2/C2S1-death.jpg';
@@ -376,6 +380,7 @@ const getStageImage = (chapter: number, nodeId: string, stage: number): string =
     return '/C2/C2S1.jpg';
   }
   
+  // Chapter 3 image mapping
   if (chapter === 3) {
     if (nodeIdLower.startsWith('3-s1')) return '/C3/C3S1.png';
     if (nodeIdLower.startsWith('3-s2')) return '/C3/C3S2-WATER.png';
@@ -394,8 +399,10 @@ const getStageImage = (chapter: number, nodeId: string, stage: number): string =
     return '/C3/C3S1.png';
   }
   
+  // Chapter 4 image mapping
   if (chapter === 4) return '/C4/C5S1.png';
   
+  // For other chapters (5-8), use generic stage image pattern
   return `/C${chapter}/C${chapter}S${stage}.jpg`;
 };
 
@@ -424,28 +431,39 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [showChoices, setShowChoices] = useState(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
   
   const playTypeSound = useTypingSound(soundEnabled);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastNodeIdRef = useRef<string | null>(null);
 
   // Fetch global game state from API
   const fetchGlobalState = useCallback(async () => {
     try {
-      const res = await fetch('/api/global-game');
+      const res = await fetch(`/api/global-game?visitorId=${visitorId}`);
       const data = await res.json();
       
       if (data.success) {
         setGlobalState(data.state);
         setOnlineCount(data.onlineCount || 1);
         
-        // Check if I already voted
-        const allVotes = Object.values(data.state.votes).flat() as VoteData[];
-        const myExistingVote = allVotes.find(v => v.visitorId === visitorId);
-        if (myExistingVote) {
-          setMyVote(myExistingVote.choiceId);
+        // Check if I already voted for this node
+        if (data.state.votes) {
+          const allVotes = Object.values(data.state.votes).flat() as VoteData[];
+          const myExistingVote = allVotes.find(v => v.visitorId === visitorId);
+          if (myExistingVote) {
+            setMyVote(myExistingVote.choiceId);
+          } else {
+            // Reset my vote if we're on a new node
+            if (lastNodeIdRef.current !== data.state.nodeId) {
+              setMyVote(null);
+            }
+          }
         }
         
-        // Update current node
+        lastNodeIdRef.current = data.state.nodeId;
+        
+        // Update current node from chapter data
         const chapter = CHAPTERS[data.state.chapter];
         if (chapter) {
           const node = chapter.nodes[data.state.nodeId];
@@ -464,7 +482,7 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
   // Poll for updates
   useEffect(() => {
     fetchGlobalState();
-    pollIntervalRef.current = setInterval(fetchGlobalState, 2000); // Poll every 2 seconds
+    pollIntervalRef.current = setInterval(fetchGlobalState, 2000);
     
     return () => {
       if (pollIntervalRef.current) {
@@ -473,7 +491,7 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
     };
   }, [fetchGlobalState]);
 
-  // Typewriter effect
+  // Typewriter effect - reset when node changes
   useEffect(() => {
     if (!currentNode) return;
     
@@ -500,6 +518,35 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
         if (currentNode.type === 'choice' && currentNode.choices) {
           setTimeout(() => setShowChoices(true), 500);
         }
+        
+        // Auto-advance for narrative nodes
+        if (currentNode.type === 'narrative' && currentNode.nextNode) {
+          setTimeout(() => {
+            advanceToNode(currentNode.nextNode!, globalState?.chapter || 1);
+          }, 3000);
+        }
+        
+        // Handle death - restart chapter
+        if (currentNode.type === 'death') {
+          setTimeout(() => {
+            const chapter = CHAPTERS[globalState?.chapter || 1];
+            advanceToNode(chapter.startNode, globalState?.chapter || 1, true);
+          }, 4000);
+        }
+        
+        // Handle chapter complete
+        if (currentNode.type === 'chapter-end' && currentNode.chapterComplete) {
+          const nextChapter = currentNode.chapterComplete.nextChapter;
+          setTimeout(() => {
+            if (nextChapter <= TOTAL_CHAPTERS) {
+              const nextChapterData = CHAPTERS[nextChapter];
+              advanceToNode(nextChapterData.startNode, nextChapter, false, true);
+              if (onChapterComplete) {
+                onChapterComplete(globalState?.chapter || 1);
+              }
+            }
+          }, 4000);
+        }
       }
     };
     
@@ -509,6 +556,36 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
       index = text.length;
     };
   }, [currentNode?.id, soundEnabled, playTypeSound]);
+
+  // Advance to next node
+  const advanceToNode = async (nextNodeId: string, chapter: number, isDeath: boolean = false, isChapterComplete: boolean = false) => {
+    if (isAdvancing) return;
+    setIsAdvancing(true);
+    
+    try {
+      const res = await fetch('/api/global-game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'advance',
+          chapter,
+          nodeId: nextNodeId,
+          isDeath,
+          isChapterComplete,
+        }),
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        setMyVote(null);
+        fetchGlobalState();
+      }
+    } catch (err) {
+      console.error('Failed to advance game:', err);
+    } finally {
+      setIsAdvancing(false);
+    }
+  };
 
   // Submit vote
   const handleVote = async (choiceId: string) => {
@@ -530,20 +607,48 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
       const data = await res.json();
       if (data.success) {
         setMyVote(choiceId);
-        fetchGlobalState(); // Refresh immediately
+        fetchGlobalState();
       }
     } catch (err) {
       console.error('Failed to submit vote:', err);
     }
   };
 
-  // Handle voting end
+  // Handle voting end - determine winner and advance
   const handleVotingEnd = useCallback(async () => {
-    // The server will handle determining the winner and advancing the game
-    await fetchGlobalState();
-  }, [fetchGlobalState]);
+    if (!globalState || !currentNode || isAdvancing) return;
+    
+    // Calculate winner from current state
+    let maxVotes = 0;
+    let winningChoiceId: string | null = null;
+    
+    for (const [choiceId, votes] of Object.entries(globalState.votes)) {
+      if (votes.length > maxVotes) {
+        maxVotes = votes.length;
+        winningChoiceId = choiceId;
+      }
+    }
+    
+    // If no votes, pick first choice
+    if (!winningChoiceId && currentNode.choices && currentNode.choices.length > 0) {
+      winningChoiceId = currentNode.choices[0].id;
+    }
+    
+    // Find the winning choice and advance
+    if (winningChoiceId && currentNode.choices) {
+      const winningChoice = currentNode.choices.find(c => c.id === winningChoiceId);
+      if (winningChoice) {
+        // Wait a moment to show the result, then advance
+        setTimeout(() => {
+          advanceToNode(winningChoice.nextNode, globalState.chapter);
+        }, 3000);
+      }
+    }
+    
+    fetchGlobalState();
+  }, [globalState, currentNode, isAdvancing, fetchGlobalState]);
 
-  // Get current stage
+  // Get current stage from node ID
   const getCurrentStage = (): number => {
     if (!globalState) return 1;
     const nodeId = globalState.nodeId;
@@ -552,6 +657,21 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
     if (nodeId.includes('complete') || nodeId.includes('soon')) return 5;
     return 1;
   };
+
+  // Emit game state updates for parent components
+  useEffect(() => {
+    if (!globalState) return;
+    
+    const currentStage = getCurrentStage();
+    window.dispatchEvent(new CustomEvent('gameStateUpdate', { 
+      detail: { 
+        completedChapters: globalState.completedChapters || 0,
+        currentChapter: globalState.chapter,
+        currentStage: currentStage,
+        currentNodeId: globalState.nodeId,
+      }
+    }));
+  }, [globalState?.completedChapters, globalState?.chapter, globalState?.nodeId]);
 
   if (isLoading || !globalState || !currentNode) {
     return (
@@ -586,12 +706,12 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
             </div>
             <div className="h-4 w-px bg-white/20" />
             <span className="text-white/60 text-sm">
-              <span className="text-amber-400 font-bold">{onlineCount}</span> survivors online
+              <span className="text-amber-400 font-bold">{onlineCount}</span> survivor{onlineCount !== 1 ? 's' : ''} online
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-white/40 text-xs">🌍 GLOBAL GAME</span>
-            <span className="text-purple-400 text-xs font-pixel">EVERYONE VOTES TOGETHER</span>
+            <span className="text-purple-400 text-xs font-pixel">VOTE TOGETHER</span>
           </div>
         </div>
       </div>
@@ -606,7 +726,7 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
           <p className="text-white/50 text-xs font-pixel">
             CHAPTER {globalState.chapter}/{TOTAL_CHAPTERS}
           </p>
-          <p className="text-white/30 text-xs">Total Votes: {totalVotes}</p>
+          <p className="text-white/30 text-xs">Deaths: {globalState.deaths || 0}</p>
         </div>
       </div>
 
@@ -622,9 +742,25 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
             style={{ width: `${(currentStage / 5) * 100}%` }}
           />
         </div>
+        <div className="flex justify-between mt-1">
+          {[1, 2, 3, 4, 5].map(stage => (
+            <div 
+              key={stage}
+              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all ${
+                stage < currentStage 
+                  ? 'bg-green-500 border-green-400 text-white' 
+                  : stage === currentStage 
+                  ? 'bg-amber-500/20 border-amber-500 text-amber-400 animate-pulse' 
+                  : 'bg-black/30 border-white/20 text-white/30'
+              }`}
+            >
+              {stage < currentStage ? '✓' : stage}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Timer */}
+      {/* Timer - Only for choice nodes */}
       {currentNode.type === 'choice' && !globalState.decided && (
         <div className="flex justify-center mb-4">
           <VotingTimer 
@@ -657,21 +793,30 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
             </p>
 
             {currentNode.type === 'death' && currentNode.deathMessage && !isTyping && (
-              <p className="text-red-400 text-sm mt-2 animate-fadeIn">
-                💀 {currentNode.deathMessage}
-              </p>
+              <div className="mt-3 p-3 bg-red-900/50 border border-red-500 rounded-lg animate-fadeIn">
+                <p className="text-red-400 text-lg font-pixel">💀 EVERYONE DIED</p>
+                <p className="text-red-300 text-sm mt-1">{currentNode.deathMessage}</p>
+                <p className="text-red-400/60 text-xs mt-2">Restarting chapter...</p>
+              </div>
             )}
 
             {currentNode.type === 'chapter-end' && currentNode.chapterComplete && !isTyping && (
-              <p className="text-green-400 text-sm mt-2 animate-fadeIn">
-                🏆 CHAPTER {currentNode.chapterComplete.chapter} COMPLETE
+              <div className="mt-3 p-3 bg-green-900/50 border border-green-500 rounded-lg animate-fadeIn">
+                <p className="text-green-400 text-lg font-pixel">🏆 CHAPTER {currentNode.chapterComplete.chapter} COMPLETE</p>
+                <p className="text-green-300/60 text-xs mt-1">Moving to next chapter...</p>
+              </div>
+            )}
+
+            {currentNode.type === 'narrative' && !isTyping && (
+              <p className="text-white/60 text-xs font-pixel animate-pulse mt-2">
+                Continuing...
               </p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Voting Choices */}
+      {/* Voting Choices - Only for choice nodes */}
       {showChoices && currentNode.type === 'choice' && currentNode.choices && (
         <div className="max-w-2xl mx-auto space-y-3 animate-fadeIn">
           {/* Question */}
@@ -729,10 +874,22 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
                 ✓ DECISION MADE
               </p>
               <p className="text-white/60 text-sm">
-                The community has chosen. Moving to next scene...
+                The community has chosen. Advancing...
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Completed chapters indicator */}
+      {(globalState.completedChapters || 0) > 0 && (
+        <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <p className="text-green-400 text-xs font-pixel">
+            🏆 CHAPTERS COMPLETED: {globalState.completedChapters}/{TOTAL_CHAPTERS}
+          </p>
+          <p className="text-green-400/60 text-xs mt-1">
+            Complete all 8 chapters to unlock the Vault!
+          </p>
         </div>
       )}
 
