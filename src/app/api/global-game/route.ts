@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
         decided: false,
         winningChoice: null,
         completedChapters: 0,
+        deaths: 0,
         lastActivity: Date.now(),
       };
       
