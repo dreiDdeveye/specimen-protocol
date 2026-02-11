@@ -8,3 +8,4 @@ export { default as Vault } from './Vault';
 export { default as DeepVault } from './DeepVault';
 export { default as GlobalGameEngine } from './GlobalGameEngine';
 export { default as StoryNodeDisplay } from './StoryNodeDisplay';
+export { default as GameEngine } from './GameEngine';
