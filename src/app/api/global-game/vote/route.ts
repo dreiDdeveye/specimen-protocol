@@ -36,7 +36,7 @@ function getGlobalState(): GlobalGameState | null {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { visitorId, visitorName, choiceId, chapter, nodeId } = body;
+    const { visitorId, visitorName, choiceId, chapter, nodeId, previousVote } = body;
     
     if (!visitorId || !choiceId) {
       return NextResponse.json(
@@ -70,15 +70,27 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Check if user already voted
-    const allVotes = Object.values(state.votes).flat();
-    const existingVote = allVotes.find(v => v.visitorId === visitorId);
-    
-    if (existingVote) {
-      return NextResponse.json(
-        { success: false, error: 'You have already voted' },
-        { status: 400 }
+    // Remove previous vote if changing vote
+    if (previousVote && state.votes[previousVote]) {
+      state.votes[previousVote] = state.votes[previousVote].filter(
+        v => v.visitorId !== visitorId
       );
+    } else {
+      // Check if user already voted (and didn't send previousVote)
+      let existingVoteChoice: string | null = null;
+      Object.entries(state.votes).forEach(([cId, votes]) => {
+        const found = votes.find(v => v.visitorId === visitorId);
+        if (found) {
+          existingVoteChoice = cId;
+        }
+      });
+      
+      // Remove from previous choice if found
+      if (existingVoteChoice && state.votes[existingVoteChoice]) {
+        state.votes[existingVoteChoice] = state.votes[existingVoteChoice].filter(
+          v => v.visitorId !== visitorId
+        );
+      }
     }
     
     // Initialize votes array for this choice if needed
@@ -94,25 +106,14 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now(),
     });
     
-    state.totalVoters++;
     state.lastActivity = Date.now();
     
-    // Check if voting time has ended after this vote
-    if (Date.now() >= state.votingEndsAt) {
-      // Calculate winner
-      let maxVotes = 0;
-      let winningChoice: string | null = null;
-      
-      for (const [cId, votes] of Object.entries(state.votes)) {
-        if (votes.length > maxVotes) {
-          maxVotes = votes.length;
-          winningChoice = cId;
-        }
-      }
-      
-      state.decided = true;
-      state.winningChoice = winningChoice;
-    }
+    // Recalculate total voters
+    const allVoterIds = new Set<string>();
+    Object.values(state.votes).forEach(votes => {
+      votes.forEach(v => allVoterIds.add(v.visitorId));
+    });
+    state.totalVoters = allVoterIds.size;
     
     return NextResponse.json({
       success: true,

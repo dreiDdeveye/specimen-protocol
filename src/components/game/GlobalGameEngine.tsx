@@ -148,16 +148,25 @@ const useTypingSound = (enabled: boolean = true) => {
 const VotingTimer: React.FC<{
   endsAt: number;
   onEnd: () => void;
-}> = ({ endsAt, onEnd }) => {
+  onLock: () => void;
+}> = ({ endsAt, onEnd, onLock }) => {
   const [timeLeft, setTimeLeft] = useState(0);
   const endedRef = useRef(false);
+  const lockedRef = useRef(false);
 
   useEffect(() => {
     endedRef.current = false;
+    lockedRef.current = false;
     
     const updateTimer = () => {
       const remaining = Math.max(0, Math.floor((endsAt - Date.now()) / 1000));
       setTimeLeft(remaining);
+      
+      // Lock votes at 10 seconds
+      if (remaining <= 10 && !lockedRef.current) {
+        lockedRef.current = true;
+        onLock();
+      }
       
       if (remaining <= 0 && !endedRef.current) {
         endedRef.current = true;
@@ -168,31 +177,34 @@ const VotingTimer: React.FC<{
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [endsAt, onEnd]);
+  }, [endsAt, onEnd, onLock]);
 
   const isUrgent = timeLeft < 60;
   const isCritical = timeLeft < 30;
+  const isLocked = timeLeft <= 10;
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
 
   return (
     <div className={`inline-flex flex-col items-center justify-center gap-1 px-5 py-2.5 rounded-xl border transition-all ${
-      isCritical 
+      isLocked
+        ? 'bg-red-900/50 border-red-500 shadow-lg shadow-red-500/50'
+        : isCritical 
         ? 'bg-red-500/30 border-red-500 animate-pulse shadow-lg shadow-red-500/30' 
         : isUrgent
         ? 'bg-red-500/20 border-red-500/70'
         : 'bg-black/70 border-red-500/30'
     }`}>
       <span className={`text-[10px] font-pixel tracking-wider ${
-        isCritical ? 'text-red-400' : 'text-white/40'
+        isLocked ? 'text-red-500' : isCritical ? 'text-red-400' : 'text-white/40'
       }`}>
-        VOTING ENDS IN
+        {isLocked ? '🔒 VOTES LOCKED' : 'VOTING ENDS IN'}
       </span>
       
       <div className="flex items-center justify-center gap-2">
         <svg 
           className={`w-4 h-4 ${
-            isCritical ? 'text-red-500 animate-pulse' : 'text-red-400/70'
+            isLocked ? 'text-red-500' : isCritical ? 'text-red-500 animate-pulse' : 'text-red-400/70'
           }`} 
           fill="none" 
           stroke="currentColor" 
@@ -203,13 +215,18 @@ const VotingTimer: React.FC<{
         </svg>
 
         <span className={`font-mono text-xl font-bold tracking-wider tabular-nums ${
-          isCritical ? 'text-red-500' : isUrgent ? 'text-red-400' : 'text-white/80'
+          isLocked ? 'text-red-500' : isCritical ? 'text-red-500' : isUrgent ? 'text-red-400' : 'text-white/80'
         }`}>
           {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
         </span>
       </div>
 
-      {isCritical && timeLeft > 0 && (
+      {isLocked && timeLeft > 0 && (
+        <span className="text-red-500 text-[9px] font-pixel">
+          DECIDING...
+        </span>
+      )}
+      {!isLocked && isCritical && timeLeft > 0 && (
         <span className="text-red-500 text-[9px] font-pixel">
           VOTE NOW!
         </span>
@@ -227,10 +244,11 @@ const VoteBar: React.FC<{
   isSelected: boolean;
   isWinner: boolean;
   isDecided: boolean;
+  isLocked: boolean;
   onVote: () => void;
   disabled: boolean;
-  recentVoters: string[];
-}> = ({ choiceId, choiceText, votes, totalVotes, isSelected, isWinner, isDecided, onVote, disabled, recentVoters }) => {
+  voters: string[];
+}> = ({ choiceId, choiceText, votes, totalVotes, isSelected, isWinner, isDecided, isLocked, onVote, disabled, voters }) => {
   const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
   
   let barColor = 'bg-white/20';
@@ -247,19 +265,31 @@ const VoteBar: React.FC<{
       borderColor = 'border-red-500/30';
       textColor = 'text-white/40';
     }
+  } else if (isLocked) {
+    if (isSelected) {
+      barColor = 'bg-amber-500';
+      borderColor = 'border-amber-500';
+      textColor = 'text-amber-400';
+    } else {
+      barColor = 'bg-white/10';
+      borderColor = 'border-white/10';
+      textColor = 'text-white/50';
+    }
   } else if (isSelected) {
     barColor = 'bg-amber-500';
     borderColor = 'border-amber-500';
     textColor = 'text-amber-400';
   }
 
+  const canClick = !disabled && !isDecided && !isLocked;
+
   return (
     <button
       onClick={onVote}
-      disabled={disabled || isDecided}
+      disabled={!canClick}
       className={`w-full p-4 text-left rounded-xl border transition-all relative overflow-hidden ${borderColor} ${
-        !disabled && !isDecided ? 'hover:border-amber-500/50 cursor-pointer' : 'cursor-default'
-      } ${isDecided ? 'bg-black/40' : 'bg-black/60'}`}
+        canClick ? 'hover:border-amber-500/50 cursor-pointer' : 'cursor-default'
+      } ${isDecided || isLocked ? 'bg-black/40' : 'bg-black/60'}`}
     >
       {/* Vote percentage bar background */}
       <div 
@@ -289,8 +319,12 @@ const VoteBar: React.FC<{
             </div>
             
             {isSelected && !isDecided && (
-              <span className="px-2 py-1 bg-amber-500/20 border border-amber-500/50 rounded text-amber-400 text-xs font-pixel">
-                YOUR VOTE
+              <span className={`px-2 py-1 rounded text-xs font-pixel ${
+                isLocked 
+                  ? 'bg-red-500/20 border border-red-500/50 text-red-400'
+                  : 'bg-amber-500/20 border border-amber-500/50 text-amber-400'
+              }`}>
+                {isLocked ? '🔒 LOCKED' : 'YOUR VOTE'}
               </span>
             )}
             
@@ -302,18 +336,19 @@ const VoteBar: React.FC<{
           </div>
         </div>
         
-        {/* Recent voters */}
-        {recentVoters.length > 0 && (
-          <div className="mt-2 flex items-center gap-1 flex-wrap">
-            <span className="text-white/30 text-[10px]">Recent:</span>
-            {recentVoters.slice(0, 5).map((name, i) => (
-              <span key={i} className="text-white/50 text-[10px] px-1.5 py-0.5 bg-white/5 rounded">
-                {name}
-              </span>
-            ))}
-            {recentVoters.length > 5 && (
-              <span className="text-white/30 text-[10px]">+{recentVoters.length - 5} more</span>
-            )}
+        {/* All voters - visible to everyone */}
+        {voters.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-white/10">
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-white/40 text-[10px] mr-1">Voters:</span>
+              {voters.map((name, i) => (
+                <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${
+                  isSelected ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-white/60'
+                }`}>
+                  {name}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -426,6 +461,7 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [myVote, setMyVote] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState(1);
+  const [isVotingLocked, setIsVotingLocked] = useState(false);
   
   // Text display state
   const [displayedText, setDisplayedText] = useState('');
@@ -436,6 +472,7 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
   const playTypeSound = useTypingSound(soundEnabled);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastNodeIdRef = useRef<string | null>(null);
+  const advancingRef = useRef(false);
 
   // Fetch global game state from API
   const fetchGlobalState = useCallback(async () => {
@@ -447,17 +484,19 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
         setGlobalState(data.state);
         setOnlineCount(data.onlineCount || 1);
         
+        // Reset states if we're on a new node
+        if (lastNodeIdRef.current !== data.state.nodeId) {
+          setMyVote(null);
+          setIsVotingLocked(false);
+          advancingRef.current = false;
+        }
+        
         // Check if I already voted for this node
         if (data.state.votes) {
           const allVotes = Object.values(data.state.votes).flat() as VoteData[];
           const myExistingVote = allVotes.find(v => v.visitorId === visitorId);
           if (myExistingVote) {
             setMyVote(myExistingVote.choiceId);
-          } else {
-            // Reset my vote if we're on a new node
-            if (lastNodeIdRef.current !== data.state.nodeId) {
-              setMyVote(null);
-            }
           }
         }
         
@@ -587,9 +626,12 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
     }
   };
 
-  // Submit vote
+  // Submit vote (or change vote if not locked)
   const handleVote = async (choiceId: string) => {
-    if (myVote || !globalState) return;
+    if (!globalState || isVotingLocked) return;
+    
+    // If clicking same choice, do nothing
+    if (myVote === choiceId) return;
     
     try {
       const res = await fetch('/api/global-game/vote', {
@@ -601,6 +643,7 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
           choiceId,
           chapter: globalState.chapter,
           nodeId: globalState.nodeId,
+          previousVote: myVote, // Send previous vote for changing
         }),
       });
       
@@ -614,39 +657,74 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
     }
   };
 
+  // Handle voting lock (at 10 seconds)
+  const handleVotingLock = useCallback(() => {
+    setIsVotingLocked(true);
+  }, []);
+
   // Handle voting end - determine winner and advance
   const handleVotingEnd = useCallback(async () => {
-    if (!globalState || !currentNode || isAdvancing) return;
+    if (!globalState || !currentNode || advancingRef.current) return;
+    
+    advancingRef.current = true;
+    setIsAdvancing(true);
     
     // Calculate winner from current state
     let maxVotes = 0;
     let winningChoiceId: string | null = null;
     
-    for (const [choiceId, votes] of Object.entries(globalState.votes)) {
+    Object.entries(globalState.votes).forEach(([choiceId, votes]) => {
       if (votes.length > maxVotes) {
         maxVotes = votes.length;
         winningChoiceId = choiceId;
       }
-    }
+    });
     
     // If no votes, pick first choice
     if (!winningChoiceId && currentNode.choices && currentNode.choices.length > 0) {
       winningChoiceId = currentNode.choices[0].id;
     }
     
+    console.log('Voting ended. Winner:', winningChoiceId);
+    
     // Find the winning choice and advance
     if (winningChoiceId && currentNode.choices) {
       const winningChoice = currentNode.choices.find(c => c.id === winningChoiceId);
       if (winningChoice) {
+        console.log('Advancing to:', winningChoice.nextNode);
+        
         // Wait a moment to show the result, then advance
-        setTimeout(() => {
-          advanceToNode(winningChoice.nextNode, globalState.chapter);
-        }, 3000);
+        setTimeout(async () => {
+          try {
+            const res = await fetch('/api/global-game', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'advance',
+                chapter: globalState.chapter,
+                nodeId: winningChoice.nextNode,
+              }),
+            });
+            
+            const data = await res.json();
+            console.log('Advance result:', data);
+            
+            if (data.success) {
+              setMyVote(null);
+              setIsVotingLocked(false);
+              advancingRef.current = false;
+              setIsAdvancing(false);
+              fetchGlobalState();
+            }
+          } catch (err) {
+            console.error('Failed to advance:', err);
+            advancingRef.current = false;
+            setIsAdvancing(false);
+          }
+        }, 2000);
       }
     }
-    
-    fetchGlobalState();
-  }, [globalState, currentNode, isAdvancing, fetchGlobalState]);
+  }, [globalState, currentNode, fetchGlobalState]);
 
   // Get current stage from node ID
   const getCurrentStage = (): number => {
@@ -766,6 +844,7 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
           <VotingTimer 
             endsAt={globalState.votingEndsAt} 
             onEnd={handleVotingEnd}
+            onLock={handleVotingLock}
           />
         </div>
       )}
@@ -838,7 +917,7 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
           <div className="grid gap-3">
             {currentNode.choices.map((choice) => {
               const choiceVotes = globalState.votes[choice.id] || [];
-              const recentVoters = choiceVotes.slice(-10).map(v => v.visitorName);
+              const voters = choiceVotes.map(v => v.visitorName);
               
               return (
                 <VoteBar
@@ -850,19 +929,29 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
                   isSelected={myVote === choice.id}
                   isWinner={globalState.winningChoice === choice.id}
                   isDecided={globalState.decided}
+                  isLocked={isVotingLocked}
                   onVote={() => handleVote(choice.id)}
-                  disabled={!!myVote}
-                  recentVoters={recentVoters}
+                  disabled={false}
+                  voters={voters}
                 />
               );
             })}
           </div>
 
           {/* Voting instructions */}
-          {!myVote && !globalState.decided && (
+          {!isVotingLocked && !globalState.decided && (
             <div className="text-center p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
               <p className="text-amber-400 text-sm">
-                👆 Click to cast your vote! The majority choice wins.
+                👆 Click to vote! You can change your vote until 10 seconds remain.
+              </p>
+            </div>
+          )}
+
+          {/* Locked notification */}
+          {isVotingLocked && !globalState.decided && (
+            <div className="text-center p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-sm font-pixel">
+                🔒 VOTES LOCKED - Counting votes...
               </p>
             </div>
           )}
