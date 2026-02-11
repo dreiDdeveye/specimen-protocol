@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-// In-memory global game state (in production, use Redis or database)
-// This will be shared across all players
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+const VOTING_DURATION = 120 * 1000; // 2 minutes
+const GAME_ID = 'main';
 
 interface VoteData {
   visitorId: string;
@@ -10,183 +16,196 @@ interface VoteData {
   timestamp: number;
 }
 
-interface GlobalGameState {
-  chapter: number;
-  nodeId: string;
-  votes: Record<string, VoteData[]>;
-  totalVoters: number;
-  votingEndsAt: number;
-  decided: boolean;
-  winningChoice: string | null;
-  completedChapters: number;
-  deaths: number;
-  lastActivity: number;
-}
-
-// Global state storage (use Redis in production)
-declare global {
-  var globalGameState: GlobalGameState | undefined;
-  var onlineUsers: Map<string, number> | undefined;
-}
-
-const VOTING_DURATION = 120 * 1000; // 2 minutes per decision
-
-// Initialize or get global state
-function getGlobalState(): GlobalGameState {
-  if (!global.globalGameState) {
-    global.globalGameState = {
-      chapter: 1,
-      nodeId: '1-s1',
-      votes: {},
-      totalVoters: 0,
-      votingEndsAt: Date.now() + VOTING_DURATION,
-      decided: false,
-      winningChoice: null,
-      completedChapters: 0,
-      deaths: 0,
-      lastActivity: Date.now(),
-    };
-  }
-  return global.globalGameState;
-}
-
-// Track online users
-function getOnlineUsers(): Map<string, number> {
-  if (!global.onlineUsers) {
-    global.onlineUsers = new Map();
-  }
-  return global.onlineUsers;
-}
-
 // GET - Fetch current global game state
 export async function GET(request: NextRequest) {
   try {
-    const state = getGlobalState();
-    const onlineUsers = getOnlineUsers();
-    
-    // Get visitor ID from query to track online status
     const { searchParams } = new URL(request.url);
     const visitorId = searchParams.get('visitorId');
     
+    // Update online status
     if (visitorId) {
-      onlineUsers.set(visitorId, Date.now());
+      await supabase
+        .from('online_users')
+        .upsert({ 
+          visitor_id: visitorId, 
+          last_seen: Date.now() 
+        }, { 
+          onConflict: 'visitor_id' 
+        });
     }
     
-    // Clean up offline users (inactive for more than 30 seconds)
-    const now = Date.now();
-    const usersToDelete: string[] = [];
-    onlineUsers.forEach((lastSeen, id) => {
-      if (now - lastSeen > 30000) {
-        usersToDelete.push(id);
+    // Clean up offline users (inactive > 30 seconds)
+    await supabase
+      .from('online_users')
+      .delete()
+      .lt('last_seen', Date.now() - 30000);
+    
+    // Get online count
+    const { count: onlineCount } = await supabase
+      .from('online_users')
+      .select('*', { count: 'exact', head: true });
+    
+    // Get game state
+    let { data: state, error } = await supabase
+      .from('global_game_state')
+      .select('*')
+      .eq('id', GAME_ID)
+      .single();
+    
+    // If no state exists, create initial state
+    if (error || !state) {
+      const initialState = {
+        id: GAME_ID,
+        chapter: 1,
+        node_id: '1-s1',
+        votes: {},
+        total_voters: 0,
+        voting_ends_at: Date.now() + VOTING_DURATION,
+        decided: false,
+        winning_choice: null,
+        completed_chapters: 0,
+        deaths: 0,
+        last_activity: Date.now(),
+      };
+      
+      const { data: newState, error: insertError } = await supabase
+        .from('global_game_state')
+        .upsert(initialState)
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Error creating initial state:', insertError);
+        return NextResponse.json({ success: false, error: 'Failed to initialize game' }, { status: 500 });
       }
-    });
-    usersToDelete.forEach(id => onlineUsers.delete(id));
+      
+      state = newState;
+    }
+    
+    const now = Date.now();
     
     // Check if voting time has ended and we need to decide
-    if (!state.decided && state.votingEndsAt <= now) {
+    if (!state.decided && state.voting_ends_at <= now) {
       // Calculate winner
       let maxVotes = 0;
       let winningChoice: string | null = null;
+      const votes = state.votes || {};
       
-      for (const [choiceId, votes] of Object.entries(state.votes)) {
-        if (votes.length > maxVotes) {
-          maxVotes = votes.length;
+      Object.entries(votes).forEach(([choiceId, voteList]) => {
+        const voteCount = (voteList as VoteData[]).length;
+        if (voteCount > maxVotes) {
+          maxVotes = voteCount;
           winningChoice = choiceId;
         }
-      }
+      });
       
-      // If no votes, pick first choice as default
-      if (!winningChoice && Object.keys(state.votes).length === 0) {
-        // Will be set when advancing to next node
-      }
+      // Update state as decided
+      const { error: updateError } = await supabase
+        .from('global_game_state')
+        .update({ 
+          decided: true, 
+          winning_choice: winningChoice,
+          last_activity: now
+        })
+        .eq('id', GAME_ID);
       
-      state.decided = true;
-      state.winningChoice = winningChoice;
+      if (!updateError) {
+        state.decided = true;
+        state.winning_choice = winningChoice;
+      }
     }
     
     return NextResponse.json({
       success: true,
       state: {
         chapter: state.chapter,
-        nodeId: state.nodeId,
-        votes: state.votes,
-        totalVoters: state.totalVoters,
-        votingEndsAt: state.votingEndsAt,
+        nodeId: state.node_id,
+        votes: state.votes || {},
+        totalVoters: state.total_voters,
+        votingEndsAt: state.voting_ends_at,
         decided: state.decided,
-        winningChoice: state.winningChoice,
-        completedChapters: state.completedChapters,
+        winningChoice: state.winning_choice,
+        completedChapters: state.completed_chapters,
         deaths: state.deaths || 0,
       },
-      onlineCount: onlineUsers.size,
+      onlineCount: onlineCount || 1,
     });
   } catch (error) {
     console.error('Error fetching global state:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch state' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to fetch state' }, { status: 500 });
   }
 }
 
-// POST - Reset or advance the game (admin action)
+// POST - Reset or advance the game
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { action, chapter, nodeId, isDeath, isChapterComplete } = body;
     
-    const state = getGlobalState();
-    
     if (action === 'reset') {
-      // Reset to beginning
-      global.globalGameState = {
-        chapter: 1,
-        nodeId: '1-s1',
-        votes: {},
-        totalVoters: 0,
-        votingEndsAt: Date.now() + VOTING_DURATION,
-        decided: false,
-        winningChoice: null,
-        completedChapters: 0,
-        deaths: 0,
-        lastActivity: Date.now(),
-      };
+      const { error } = await supabase
+        .from('global_game_state')
+        .update({
+          chapter: 1,
+          node_id: '1-s1',
+          votes: {},
+          total_voters: 0,
+          voting_ends_at: Date.now() + VOTING_DURATION,
+          decided: false,
+          winning_choice: null,
+          completed_chapters: 0,
+          deaths: 0,
+          last_activity: Date.now(),
+        })
+        .eq('id', GAME_ID);
+      
+      if (error) {
+        return NextResponse.json({ success: false, error: 'Failed to reset game' }, { status: 500 });
+      }
       
       return NextResponse.json({ success: true, message: 'Game reset' });
     }
     
-    if (action === 'advance' && chapter && nodeId) {
-      // Track deaths
-      if (isDeath) {
-        state.deaths = (state.deaths || 0) + 1;
+    if (action === 'advance' && chapter !== undefined && nodeId) {
+      // Get current state first
+      const { data: currentState } = await supabase
+        .from('global_game_state')
+        .select('deaths, completed_chapters')
+        .eq('id', GAME_ID)
+        .single();
+      
+      const newDeaths = isDeath ? ((currentState?.deaths || 0) + 1) : (currentState?.deaths || 0);
+      const newCompletedChapters = isChapterComplete 
+        ? Math.max(currentState?.completed_chapters || 0, chapter - 1)
+        : (currentState?.completed_chapters || 0);
+      
+      const { error } = await supabase
+        .from('global_game_state')
+        .update({
+          chapter,
+          node_id: nodeId,
+          votes: {},
+          total_voters: 0,
+          voting_ends_at: Date.now() + VOTING_DURATION,
+          decided: false,
+          winning_choice: null,
+          deaths: newDeaths,
+          completed_chapters: newCompletedChapters,
+          last_activity: Date.now(),
+        })
+        .eq('id', GAME_ID);
+      
+      if (error) {
+        console.error('Error advancing game:', error);
+        return NextResponse.json({ success: false, error: 'Failed to advance game' }, { status: 500 });
       }
       
-      // Track chapter completion
-      if (isChapterComplete) {
-        state.completedChapters = Math.max(state.completedChapters || 0, chapter - 1);
-      }
-      
-      // Advance to specific node
-      state.chapter = chapter;
-      state.nodeId = nodeId;
-      state.votes = {};
-      state.totalVoters = 0;
-      state.votingEndsAt = Date.now() + VOTING_DURATION;
-      state.decided = false;
-      state.winningChoice = null;
-      state.lastActivity = Date.now();
-      
-      return NextResponse.json({ success: true, message: 'Game advanced' });
+      return NextResponse.json({ success: true, message: 'Game advanced', nodeId, chapter });
     }
     
-    return NextResponse.json(
-      { success: false, error: 'Invalid action' },
-      { status: 400 }
-    );
+    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('Error updating global state:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to update state' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to update state' }, { status: 500 });
   }
 }

@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+const GAME_ID = 'main';
 
 interface VoteData {
   visitorId: string;
@@ -7,127 +14,96 @@ interface VoteData {
   timestamp: number;
 }
 
-interface GlobalGameState {
-  chapter: number;
-  nodeId: string;
-  votes: Record<string, VoteData[]>;
-  totalVoters: number;
-  votingEndsAt: number;
-  decided: boolean;
-  winningChoice: string | null;
-  completedChapters: number;
-  lastActivity: number;
-}
-
-// Chapter data for advancing (simplified - you'll need to import actual chapter data)
-const CHAPTER_CHOICES: Record<string, Record<string, string>> = {
-  // Map choice IDs to next node IDs
-  // This should match your actual chapter data
-};
-
-const VOTING_DURATION = 120 * 1000; // 2 minutes
-
-// Get global state
-function getGlobalState(): GlobalGameState | null {
-  return global.globalGameState || null;
-}
-
-// POST - Submit a vote
+// POST - Submit or change a vote
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { visitorId, visitorName, choiceId, chapter, nodeId, previousVote } = body;
+    const { visitorId, visitorName, choiceId, chapter, nodeId } = body;
     
     if (!visitorId || !choiceId) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
     
-    const state = getGlobalState();
+    // Get current state
+    const { data: state, error: fetchError } = await supabase
+      .from('global_game_state')
+      .select('*')
+      .eq('id', GAME_ID)
+      .single();
     
-    if (!state) {
-      return NextResponse.json(
-        { success: false, error: 'Game not initialized' },
-        { status: 400 }
-      );
+    if (fetchError || !state) {
+      return NextResponse.json({ success: false, error: 'Game not initialized' }, { status: 400 });
     }
     
-    // Verify we're voting on the current node
-    if (state.chapter !== chapter || state.nodeId !== nodeId) {
-      return NextResponse.json(
-        { success: false, error: 'Vote is for outdated game state' },
-        { status: 400 }
-      );
+    // Verify we're voting on current node
+    if (state.chapter !== chapter || state.node_id !== nodeId) {
+      return NextResponse.json({ success: false, error: 'Game state has changed, please refresh' }, { status: 400 });
     }
     
-    // Check if voting has ended
+    // Check if voting ended
     if (state.decided) {
-      return NextResponse.json(
-        { success: false, error: 'Voting has ended' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Voting has ended' }, { status: 400 });
     }
     
-    // Remove previous vote if changing vote
-    if (previousVote && state.votes[previousVote]) {
-      state.votes[previousVote] = state.votes[previousVote].filter(
-        v => v.visitorId !== visitorId
-      );
-    } else {
-      // Check if user already voted (and didn't send previousVote)
-      let existingVoteChoice: string | null = null;
-      Object.entries(state.votes).forEach(([cId, votes]) => {
-        const found = votes.find(v => v.visitorId === visitorId);
-        if (found) {
-          existingVoteChoice = cId;
-        }
-      });
-      
-      // Remove from previous choice if found
-      if (existingVoteChoice && state.votes[existingVoteChoice]) {
-        state.votes[existingVoteChoice] = state.votes[existingVoteChoice].filter(
-          v => v.visitorId !== visitorId
-        );
+    // Check if locked (last 10 seconds)
+    const timeLeft = Math.floor((state.voting_ends_at - Date.now()) / 1000);
+    if (timeLeft <= 10) {
+      return NextResponse.json({ success: false, error: 'Voting is locked' }, { status: 400 });
+    }
+    
+    // Update votes
+    const votes: Record<string, VoteData[]> = state.votes || {};
+    
+    // Remove previous vote from any choice
+    Object.keys(votes).forEach(cId => {
+      votes[cId] = (votes[cId] || []).filter(v => v.visitorId !== visitorId);
+      // Clean up empty arrays
+      if (votes[cId].length === 0) {
+        delete votes[cId];
       }
+    });
+    
+    // Add new vote
+    if (!votes[choiceId]) {
+      votes[choiceId] = [];
     }
     
-    // Initialize votes array for this choice if needed
-    if (!state.votes[choiceId]) {
-      state.votes[choiceId] = [];
-    }
-    
-    // Add the vote
-    state.votes[choiceId].push({
+    votes[choiceId].push({
       visitorId,
       visitorName: visitorName || 'Anonymous',
       choiceId,
       timestamp: Date.now(),
     });
     
-    state.lastActivity = Date.now();
-    
-    // Recalculate total voters
+    // Calculate total voters
     const allVoterIds = new Set<string>();
-    Object.values(state.votes).forEach(votes => {
-      votes.forEach(v => allVoterIds.add(v.visitorId));
+    Object.values(votes).forEach(voteList => {
+      (voteList as VoteData[]).forEach(v => allVoterIds.add(v.visitorId));
     });
-    state.totalVoters = allVoterIds.size;
+    
+    // Update database
+    const { error: updateError } = await supabase
+      .from('global_game_state')
+      .update({
+        votes,
+        total_voters: allVoterIds.size,
+        last_activity: Date.now(),
+      })
+      .eq('id', GAME_ID)
+      .eq('node_id', nodeId); // Ensure we're still on the same node
+    
+    if (updateError) {
+      console.error('Error updating vote:', updateError);
+      return NextResponse.json({ success: false, error: 'Failed to record vote' }, { status: 500 });
+    }
     
     return NextResponse.json({
       success: true,
       message: 'Vote recorded',
       yourVote: choiceId,
-      currentVotes: Object.fromEntries(
-        Object.entries(state.votes).map(([k, v]) => [k, v.length])
-      ),
     });
   } catch (error) {
     console.error('Error submitting vote:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to submit vote' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to submit vote' }, { status: 500 });
   }
 }
