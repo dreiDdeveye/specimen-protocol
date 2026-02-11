@@ -6,6 +6,5 @@ export { default as Choices } from './Choices';
 export { default as ProgressBar } from './ProgressBar';
 export { default as Vault } from './Vault';
 export { default as DeepVault } from './DeepVault';
-export { default as GameEngine } from './GameEngine';
 export { default as GlobalGameEngine } from './GlobalGameEngine';
 export { default as StoryNodeDisplay } from './StoryNodeDisplay';
