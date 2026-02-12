@@ -701,7 +701,7 @@ export default function LandingPage() {
             />
             
             <a 
-              href="https://x.com/i/communities/2019914054790525221" 
+              href="https://x.com/i/communities/2021922006829281631?fbclid=IwY2xjawP6t6ZleHRuA2FlbQIxMABicmlkETFacXdSNTZnTFM2eEE5YWNwc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHmXb6PjZAgfPhopdrhZCMCSgxx1B7_nqg5FG624yDLehgcBvojQ_ElXOWtbC_aem_9VhB49rDcSy2tJZi-IYODg" 
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-white/50 hover:text-red-400 transition-all text-xs"
@@ -713,9 +713,9 @@ export default function LandingPage() {
               <span className="hidden sm:inline">Community</span>
             </a>
             <a 
-              href="https://x.com/EpsteinFiles" 
+              href="https://x.com/EggSyVOT" 
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener noreferrer" 
               className="flex items-center gap-1.5 text-white/50 hover:text-red-400 transition-all text-xs"
               aria-label="Main"
             >
@@ -1226,7 +1226,7 @@ export default function LandingPage() {
               The Truth. Unsealed. Forever.
             </div>
             <div className="flex items-center gap-4">
-              <a href="https://x.com/EpsteinFiles" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-red-400 transition-colors">
+              <a href="https://x.com/i/communities/2021922006829281631?fbclid=IwY2xjawP6t6ZleHRuA2FlbQIxMABicmlkETFacXdSNTZnTFM2eEE5YWNwc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHmXb6PjZAgfPhopdrhZCMCSgxx1B7_nqg5FG624yDLehgcBvojQ_ElXOWtbC_aem_9VhB49rDcSy2tJZi-IYODg" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-red-400 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                 </svg>
