@@ -21,13 +21,15 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const visitorId = searchParams.get('visitorId');
+    const visitorName = searchParams.get('visitorName');
     
-    // Update online status
+    // Update online status with name
     if (visitorId) {
       await supabase
         .from('online_users')
         .upsert({ 
-          visitor_id: visitorId, 
+          visitor_id: visitorId,
+          visitor_name: visitorName || 'Anonymous',
           last_seen: Date.now() 
         }, { 
           onConflict: 'visitor_id' 

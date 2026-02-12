@@ -282,7 +282,7 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
   // Fetch global state
   const fetchGlobalState = useCallback(async () => {
     try {
-      const res = await fetch(`/api/global-game?visitorId=${visitorId}`);
+      const res = await fetch(`/api/global-game?visitorId=${visitorId}&visitorName=${encodeURIComponent(visitorName)}`);
       const data = await res.json();
       
       if (data.success && data.state) {
@@ -541,9 +541,26 @@ export const GlobalGameEngine: React.FC<GlobalGameEngineProps> = ({
             </span>
             <span className="text-green-400 font-pixel text-sm">LIVE</span>
             <span className="text-white/40">|</span>
-            <span className="text-white/60 text-sm">
-              <span className="text-amber-400 font-bold">{onlineCount}</span> online
-            </span>
+            <div className="flex items-center gap-2">
+              <div className="flex -space-x-2">
+                {[...Array(Math.min(onlineCount, 5))].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-black flex items-center justify-center text-[10px] font-bold"
+                  >
+                    {String.fromCharCode(65 + i)}
+                  </div>
+                ))}
+                {onlineCount > 5 && (
+                  <div className="w-6 h-6 rounded-full bg-white/20 border-2 border-black flex items-center justify-center text-[10px] text-white">
+                    +{onlineCount - 5}
+                  </div>
+                )}
+              </div>
+              <span className="text-white/60 text-sm">
+                <span className="text-amber-400 font-bold">{onlineCount}</span> {onlineCount === 1 ? 'player' : 'players'} online
+              </span>
+            </div>
           </div>
           <span className="text-purple-400 text-xs font-pixel">🌍 GLOBAL VOTING</span>
         </div>
