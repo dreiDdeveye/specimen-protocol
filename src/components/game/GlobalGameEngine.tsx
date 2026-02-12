@@ -88,6 +88,7 @@ const useTypingSound = (enabled: boolean = true) => {
 const getStageImage = (chapter: number, nodeId: string, stage: number): string => {
   const nodeIdLower = nodeId.toLowerCase();
   
+  // Chapter 1
   if (chapter === 1) {
     if (nodeIdLower.includes('death')) return '/C1/C1S3-death.jpg';
     if (nodeIdLower.startsWith('1-s1')) return '/C1/C1S1.jpg';
@@ -115,6 +116,7 @@ const getStageImage = (chapter: number, nodeId: string, stage: number): string =
     return '/C1/C1S1.jpg';
   }
   
+  // Chapter 2
   if (chapter === 2) {
     if (nodeIdLower.includes('death')) return '/C2/C2S1-death.jpg';
     if (nodeIdLower.startsWith('2-s1')) {
@@ -129,6 +131,7 @@ const getStageImage = (chapter: number, nodeId: string, stage: number): string =
     return '/C2/C2S1.jpg';
   }
   
+  // Chapter 3
   if (chapter === 3) {
     if (nodeIdLower.startsWith('3-s1')) return '/C3/C3S1.png';
     if (nodeIdLower.startsWith('3-s2')) return '/C3/C3S2-WATER.png';
@@ -138,9 +141,64 @@ const getStageImage = (chapter: number, nodeId: string, stage: number): string =
     return '/C3/C3S1.png';
   }
   
-  if (chapter === 4) return '/C4/C5S1.png';
+  // Chapter 4
+  if (chapter === 4) {
+    if (nodeIdLower.startsWith('4-s1')) return '/C4/C4S1.png';
+    if (nodeIdLower.startsWith('4-s2')) return '/C4/C4S2.png';
+    if (nodeIdLower.startsWith('4-s3')) return '/C4/C4S3.png';
+    if (nodeIdLower.startsWith('4-s4')) return '/C4/C4S4.png';
+    if (nodeIdLower.startsWith('4-s5') || nodeIdLower.includes('complete')) return '/C4/C4S5.png';
+    return '/C4/C4S1.png';
+  }
   
-  return `/C${chapter}/C${chapter}S${stage}.jpg`;
+  // Chapter 5
+  if (chapter === 5) {
+    if (nodeIdLower.startsWith('5-s1')) {
+      if (nodeIdLower.includes('chen')) return '/C5/C4S1-chen.png';
+      if (nodeIdLower.includes('fbi')) return '/C5/C4S1-FBI.png';
+      if (nodeIdLower.includes('oney')) return '/C5/C4S1-oney.png';
+      if (nodeIdLower.includes('face')) return '/C5/C5S1-Faces.png';
+      return '/C5/C5S1.png';
+    }
+    if (nodeIdLower.startsWith('5-s2')) return '/C5/C5S1.png';
+    if (nodeIdLower.startsWith('5-s3')) return '/C5/C5S3.png';
+    if (nodeIdLower.startsWith('5-s4')) return '/C5/C5S4.png';
+    if (nodeIdLower.startsWith('5-s5') || nodeIdLower.includes('complete')) return '/C5/C5S5.png';
+    return '/C5/C5S1.png';
+  }
+  
+  // Chapter 6 (note: folder is lowercase 'c6')
+  if (chapter === 6) {
+    if (nodeIdLower.startsWith('6-s1')) return '/c6/C6S1.png';
+    if (nodeIdLower.startsWith('6-s2')) return '/c6/C6S2.png';
+    if (nodeIdLower.startsWith('6-s3')) return '/c6/c6s3.png';
+    if (nodeIdLower.startsWith('6-s4')) return '/c6/C6S4.png';
+    if (nodeIdLower.startsWith('6-s5') || nodeIdLower.includes('complete')) return '/c6/c6s5.png';
+    return '/c6/C6S1.png';
+  }
+  
+  // Chapter 7
+  if (chapter === 7) {
+    if (nodeIdLower.startsWith('7-s1')) return '/C7/C7S1.png';
+    if (nodeIdLower.startsWith('7-s2')) return '/C7/c7s2.png';
+    if (nodeIdLower.startsWith('7-s3')) return '/C7/C7S3.png';
+    if (nodeIdLower.startsWith('7-s4')) return '/C7/C7S4.png';
+    if (nodeIdLower.startsWith('7-s5') || nodeIdLower.includes('complete')) return '/C7/C7S5.png';
+    return '/C7/C7S1.png';
+  }
+  
+  // Chapter 8
+  if (chapter === 8) {
+    if (nodeIdLower.startsWith('8-s1')) return '/C8/C8S1.png';
+    if (nodeIdLower.startsWith('8-s2')) return '/C8/C8S2.png';
+    if (nodeIdLower.startsWith('8-s3')) return '/C8/c8s3.png';
+    if (nodeIdLower.startsWith('8-s4')) return '/C8/C8S4.png';
+    if (nodeIdLower.startsWith('8-s5') || nodeIdLower.includes('complete')) return '/C8/C8S5.png';
+    return '/C8/C8S1.png';
+  }
+  
+  // Fallback
+  return `/C${chapter}/C${chapter}S${stage}.png`;
 };
 
 // Props
