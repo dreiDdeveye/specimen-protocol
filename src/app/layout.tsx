@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
-  title: 'THE ISLAND',
+  title: 'THE EPSTEIN FILES',
   description: 'Observe the evolution. Witness the transformation.',
   icons: {
     icon: '/logo.png',

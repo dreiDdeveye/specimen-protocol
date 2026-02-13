@@ -20,7 +20,7 @@ import {
   DeepVault,
 } from '@/components/game';
 
-// Wallet Button Component
+// Wallet Button Component - UPDATED SIZE
 const WalletButton: React.FC = () => {
   const { connected, connecting, publicKey, connect, disconnect } = useWallet();
 
@@ -29,7 +29,7 @@ const WalletButton: React.FC = () => {
       <button
         onClick={connect}
         disabled={connecting}
-        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/50 text-red-400 text-sm rounded-lg hover:bg-red-500/20 transition-all"
+        className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 border border-red-500/50 text-red-400 text-sm font-medium rounded-lg hover:bg-red-500/20 transition-all"
       >
         {connecting ? (
           <>
@@ -38,7 +38,7 @@ const WalletButton: React.FC = () => {
           </>
         ) : (
           <>
-            <span>🔗</span>
+            <span className="text-base">🔗</span>
             <span>Connect Wallet</span>
           </>
         )}
@@ -49,7 +49,7 @@ const WalletButton: React.FC = () => {
   return (
     <button
       onClick={disconnect}
-      className="flex items-center gap-2 px-3 py-2 bg-black/30 border border-green-500/30 text-white/60 text-xs rounded-lg hover:border-red-500/50 hover:text-red-400 transition-all"
+      className="flex items-center gap-2 px-4 py-2 bg-black/30 border border-green-500/30 text-white/60 text-sm font-medium rounded-lg hover:border-red-500/50 hover:text-red-400 transition-all"
     >
       <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
       <span className="font-mono">{publicKey?.slice(0, 4)}...{publicKey?.slice(-4)}</span>
@@ -57,7 +57,7 @@ const WalletButton: React.FC = () => {
   );
 };
 
-// Game Mode Toggle
+// Game Mode Toggle - UPDATED SIZE
 const GameModeToggle: React.FC<{
   mode: 'solo' | 'global';
   onChange: (mode: 'solo' | 'global') => void;
@@ -66,23 +66,23 @@ const GameModeToggle: React.FC<{
     <div className="flex items-center gap-2 p-1 bg-black/50 border border-white/10 rounded-lg">
       <button
         onClick={() => onChange('solo')}
-        className={`px-3 py-1.5 rounded text-xs font-pixel transition-all ${
+        className={`px-4 py-2 rounded text-sm font-pixel transition-all ${
           mode === 'solo'
             ? 'bg-amber-500/20 border border-amber-500/50 text-amber-400'
             : 'text-white/40 hover:text-white/60'
         }`}
       >
-        🎮 SOLO
+        <span className="text-base mr-1">🎮</span> SOLO
       </button>
       <button
         onClick={() => onChange('global')}
-        className={`px-3 py-1.5 rounded text-xs font-pixel transition-all ${
+        className={`px-4 py-2 rounded text-sm font-pixel transition-all ${
           mode === 'global'
             ? 'bg-purple-500/20 border border-purple-500/50 text-purple-400'
             : 'text-white/40 hover:text-white/60'
         }`}
       >
-        🌍 GLOBAL
+        <span className="text-base mr-1">🌍</span> GLOBAL
       </button>
     </div>
   );
@@ -290,7 +290,7 @@ const GameContent: React.FC = () => {
       {/* Red gradient overlay */}
       <div className="fixed inset-x-0 top-0 h-[400px] bg-gradient-to-b from-red-950/30 via-red-950/10 to-transparent pointer-events-none z-0" />
 
-      {/* Header */}
+      {/* Header - UPDATED WITH BIGGER NAVIGATION */}
       <header 
         className={`fixed top-0 left-0 right-0 z-50 border-b border-red-500/20 bg-black/80 backdrop-blur-sm transition-all duration-300 ${
           isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
@@ -300,15 +300,15 @@ const GameContent: React.FC = () => {
           backdropFilter: `blur(${8 * headerOpacity}px)`,
         }}
       >
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           {/* Left side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Link 
               href="/"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white/60 text-xs hover:bg-white/10 hover:border-red-500/30 hover:text-red-400 transition-all group"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white/60 text-sm font-medium hover:bg-white/10 hover:border-red-500/30 hover:text-red-400 transition-all group"
             >
               <svg 
-                className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" 
+                className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -318,9 +318,9 @@ const GameContent: React.FC = () => {
               <span className="hidden sm:inline">Back</span>
             </Link>
             
-            <div className="h-4 w-px bg-white/10 hidden sm:block" />
+            <div className="h-6 w-px bg-white/10 hidden lg:block" />
             
-            <span className="font-pixel text-red-500 text-sm hidden sm:inline">THE ISLAND</span>
+            <span className="font-pixel text-red-500 text-base hidden lg:inline">THE EPSTEIN FILES</span>
             
             {/* Game Mode Toggle */}
             <GameModeToggle mode={gameMode} onChange={setGameMode} />
@@ -328,30 +328,34 @@ const GameContent: React.FC = () => {
             {/* Sound Toggle */}
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className={`flex items-center gap-1.5 px-2 py-1 border rounded text-xs transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-all ${
                 soundEnabled 
                   ? 'bg-red-500/20 border-red-500/50 text-red-400' 
                   : 'bg-black/50 border-white/20 text-white/40'
               }`}
             >
-              {soundEnabled ? '🔊' : '🔇'}
+              <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
+              <span className="hidden sm:inline">{soundEnabled ? 'ON' : 'OFF'}</span>
             </button>
           </div>
           
-          {/* Center - Username */}
-          {observer && (
-            <span className="text-white/40 text-xs hidden md:inline absolute left-1/2 -translate-x-1/2">
-              Survivor: <span className="text-red-400">{observer.username}</span>
-            </span>
-          )}
-          
-          {/* Right side */}
-          <WalletButton />
+          {/* Center/Right - Username (always visible) */}
+          <div className="flex items-center gap-4">
+            {observer && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
+                <span className="text-white/40 text-sm font-medium">Survivor:</span>
+                <span className="text-red-400 text-sm font-bold">{observer.username}</span>
+              </div>
+            )}
+            
+            {/* Wallet Button */}
+            <WalletButton />
+          </div>
         </div>
       </header>
 
       {/* Spacer */}
-      <div className="h-14" />
+      <div className="h-16" />
 
       {/* Main Content */}
       <main className="relative z-10 max-w-6xl mx-auto px-4 py-6 md:py-10">
@@ -472,7 +476,7 @@ const GameContent: React.FC = () => {
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/5 py-6 text-center">
         <p className="text-white/20 text-xs font-pixel">
-          THE ISLAND • {gameMode === 'global' ? 'GLOBAL VOTING' : 'SOLO MODE'} • 8 CHAPTERS
+          THE EPSTEIN FILES • {gameMode === 'global' ? 'GLOBAL VOTING' : 'SOLO MODE'} • 8 CHAPTERS
         </p>
       </footer>
 

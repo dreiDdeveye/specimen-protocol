@@ -422,7 +422,7 @@ const GlitchText: React.FC<{ text: string; className?: string }> = ({ text, clas
 // CA Section Component
 const CASection: React.FC<{ show: boolean }> = ({ show }) => {
   const [copied, setCopied] = useState(false);
-  const CA_ADDRESS = 'GoctGHWWBViKRKKUoqQrVvrK3JQdvo1KTEQE1CSopump';
+  const CA_ADDRESS = '';
 
   const handleCopy = async () => {
     try {
@@ -664,27 +664,27 @@ export default function LandingPage() {
         />
       </div>
 
-      {/* Header */}
+      {/* Header - UPDATED WITH LARGER LOGO AND NAVIGATION */}
       <header className={`fixed top-0 left-0 right-0 z-50 border-b border-white/5 backdrop-blur-xl transition-all duration-500 ${startLandingTyping ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'}`}
         style={{ background: `rgba(10, 10, 10, ${Math.min(0.9, scrollY / 200)})` }}
       >
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-4 group">
             <div className="relative">
               <Image 
                 src="/logo.png" 
                 alt="Epstein Files" 
-                width={36} 
-                height={36}
+                width={56} 
+                height={56}
                 className="pixelated transition-transform group-hover:scale-110"
                 style={{ imageRendering: 'pixelated' }}
               />
               <div className="absolute inset-0 bg-red-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <span className="font-pixel text-sm text-red-500 tracking-wider">
+            <span className="font-pixel text-lg text-red-500 tracking-wider">
               {startLandingTyping && (
                 <TypewriterText 
-                  text="THE ISLAND" 
+                  text="THE EPSTEIN FILES" 
                   speed={50} 
                   delay={0}
                   onComplete={() => setTypingStep(1)}
@@ -693,7 +693,7 @@ export default function LandingPage() {
               )}
             </span>
           </Link>
-          <nav className={`flex items-center gap-4 transition-all duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
+          <nav className={`flex items-center gap-5 transition-all duration-300 ${typingStep >= 1 ? 'opacity-100' : 'opacity-0'}`}>
             {/* Music Toggle */}
             <MusicToggle 
               isPlaying={isMusicPlaying}
@@ -704,10 +704,10 @@ export default function LandingPage() {
               href="https://x.com/i/communities/2021922006829281631?fbclid=IwY2xjawP6t6ZleHRuA2FlbQIxMABicmlkETFacXdSNTZnTFM2eEE5YWNwc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHmXb6PjZAgfPhopdrhZCMCSgxx1B7_nqg5FG624yDLehgcBvojQ_ElXOWtbC_aem_9VhB49rDcSy2tJZi-IYODg" 
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-white/50 hover:text-red-400 transition-all text-xs"
+              className="flex items-center gap-2 text-white/50 hover:text-red-400 transition-all text-sm font-medium"
               aria-label="Community"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
               </svg>
               <span className="hidden sm:inline">Community</span>
@@ -716,25 +716,25 @@ export default function LandingPage() {
               href="https://x.com/EggSyVOT" 
               target="_blank"
               rel="noopener noreferrer" 
-              className="flex items-center gap-1.5 text-white/50 hover:text-red-400 transition-all text-xs"
+              className="flex items-center gap-2 text-white/50 hover:text-red-400 transition-all text-sm font-medium"
               aria-label="Main"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
               </svg>
               <span className="hidden sm:inline">Main</span>
             </a>
             <Link 
               href="/observe" 
-              className="text-white/50 hover:text-red-400 transition-colors text-sm"
+              className="text-white/50 hover:text-red-400 transition-colors text-base font-medium"
             >
               Investigate
             </Link>
             <Link 
               href="/observe" 
-              className="px-5 py-2.5 bg-red-500/10 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white transition-all text-sm rounded-lg font-medium flex items-center gap-2"
+              className="px-6 py-3 bg-red-500/10 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white transition-all text-base rounded-lg font-medium flex items-center gap-2"
             >
-              <PlayIcon size={12} />
+              <PlayIcon size={14} />
               <span>Start</span>
             </Link>
           </nav>
@@ -1178,7 +1178,7 @@ export default function LandingPage() {
                       The blockchain remembers everything."
                     </p>
                     <div className="mt-4 text-red-400/60 text-xs font-pixel">
-                      — THE ISLAND MANIFESTO
+                      — THE EPSTEIN FILES MANIFESTO
                     </div>
                   </div>
                 </div>
@@ -1220,7 +1220,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <FileIcon className="text-red-400" size={20} />
-              <span className="font-pixel text-xs text-white/30">THE ISLAND</span>
+              <span className="font-pixel text-xs text-white/30">THE EPSTEIN FILES</span>
             </div>
             <div className="text-white/30 text-sm">
               The Truth. Unsealed. Forever.
