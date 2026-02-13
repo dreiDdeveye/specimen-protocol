@@ -701,7 +701,7 @@ export default function LandingPage() {
             />
             
             <a 
-              href="https://x.com/i/communities/2021922006829281631?fbclid=IwY2xjawP6t6ZleHRuA2FlbQIxMABicmlkETFacXdSNTZnTFM2eEE5YWNwc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHmXb6PjZAgfPhopdrhZCMCSgxx1B7_nqg5FG624yDLehgcBvojQ_ElXOWtbC_aem_9VhB49rDcSy2tJZi-IYODg" 
+              href="https://x.com/i/communities/2022434104923590789" 
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-white/50 hover:text-red-400 transition-all text-sm font-medium"
@@ -710,26 +710,9 @@ export default function LandingPage() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
               </svg>
-              <span className="hidden sm:inline">Community</span>
+              <span className="hidden sm:inline">Join The Investigation</span>
             </a>
-            <a 
-              href="https://x.com/EggSyVOT" 
-              target="_blank"
-              rel="noopener noreferrer" 
-              className="flex items-center gap-2 text-white/50 hover:text-red-400 transition-all text-sm font-medium"
-              aria-label="Main"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-              </svg>
-              <span className="hidden sm:inline">Main</span>
-            </a>
-            <Link 
-              href="/observe" 
-              className="text-white/50 hover:text-red-400 transition-colors text-base font-medium"
-            >
-              Investigate
-            </Link>
+
             <Link 
               href="/observe" 
               className="px-6 py-3 bg-red-500/10 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white transition-all text-base rounded-lg font-medium flex items-center gap-2"
