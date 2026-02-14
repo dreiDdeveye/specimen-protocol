@@ -320,7 +320,7 @@ const GameContent: React.FC = () => {
             
             <div className="h-6 w-px bg-white/10 hidden lg:block" />
             
-            <span className="font-pixel text-red-500 text-base hidden lg:inline">THE EPSTEIN FILES</span>
+            <span className="font-pixel text-red-500 text-base hidden lg:inline">THE ISLAND</span>
             
             {/* Game Mode Toggle */}
             <GameModeToggle mode={gameMode} onChange={setGameMode} />
@@ -476,7 +476,7 @@ const GameContent: React.FC = () => {
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/5 py-6 text-center">
         <p className="text-white/20 text-xs font-pixel">
-          THE EPSTEIN FILES • {gameMode === 'global' ? 'GLOBAL VOTING' : 'SOLO MODE'} • 8 CHAPTERS
+          THE ISLAND • {gameMode === 'global' ? 'GLOBAL VOTING' : 'SOLO MODE'} • 8 CHAPTERS
         </p>
       </footer>
 

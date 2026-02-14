@@ -274,7 +274,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
       <div className="relative flex flex-col items-center max-w-lg px-8">
         {/* Title */}
         <h1 className="font-pixel text-4xl md:text-5xl text-white mb-2">
-          THE <span className="text-red-500">EPSTEIN FILES</span>
+          THE <span className="text-red-500">ISLAND FILES</span>
         </h1>
         <p className="text-gray-500 text-xs mb-8 tracking-widest">ESCAPE OR BE SILENCED</p>
 

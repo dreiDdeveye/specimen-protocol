@@ -684,7 +684,7 @@ export default function LandingPage() {
             <span className="font-pixel text-lg text-red-500 tracking-wider">
               {startLandingTyping && (
                 <TypewriterText 
-                  text="THE EPSTEIN FILES" 
+                  text="THE ISLAND" 
                   speed={50} 
                   delay={0}
                   onComplete={() => setTypingStep(1)}
@@ -1161,7 +1161,7 @@ export default function LandingPage() {
                       The blockchain remembers everything."
                     </p>
                     <div className="mt-4 text-red-400/60 text-xs font-pixel">
-                      — THE EPSTEIN FILES MANIFESTO
+                      — THE ISLAND MANIFESTO
                     </div>
                   </div>
                 </div>
@@ -1203,7 +1203,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <FileIcon className="text-red-400" size={20} />
-              <span className="font-pixel text-xs text-white/30">THE EPSTEIN FILES</span>
+              <span className="font-pixel text-xs text-white/30">THE ISLAND</span>
             </div>
             <div className="text-white/30 text-sm">
               The Truth. Unsealed. Forever.

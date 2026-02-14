@@ -152,7 +152,7 @@ export const MysteryPopup: React.FC<MysteryPopupProps> = ({ onClose }) => {
                 <span className="text-red-400 text-xs font-mono uppercase tracking-wider">Secure Connection</span>
               </div>
               <h1 className="text-3xl font-bold text-white mb-2">
-                THE <span className="text-red-500">EPSTEIN</span> FILES
+                THE <span className="text-red-500">ISLAND</span>
               </h1>
               <p className="text-white/40 text-sm">
                 Classified Archive • 1,247 Documents • 247 Names
