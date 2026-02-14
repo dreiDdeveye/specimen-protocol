@@ -1209,7 +1209,7 @@ export default function LandingPage() {
               The Truth. Unsealed. Forever.
             </div>
             <div className="flex items-center gap-4">
-              <a href="https://x.com/i/communities/2021922006829281631?fbclid=IwY2xjawP6t6ZleHRuA2FlbQIxMABicmlkETFacXdSNTZnTFM2eEE5YWNwc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHmXb6PjZAgfPhopdrhZCMCSgxx1B7_nqg5FG624yDLehgcBvojQ_ElXOWtbC_aem_9VhB49rDcSy2tJZi-IYODg" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-red-400 transition-colors">
+              <a href="https://x.com/i/communities/2022603546798231690?fbclid=IwY2xjawP9I2FleHRuA2FlbQIxMABicmlkETJHQlZwSGdIUUNJcnYyM3hZc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHgrt2bS73yVVhY5l4WjCqa6gvHdkmXCoG8ljMxodbhfSGXPwG3MgcKh7Wrd3_aem_HsadzZ_JuexbvV6La2OHqQ" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-red-400 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                 </svg>
